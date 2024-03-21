@@ -47,3 +47,4 @@ repos:
       - id: mypy
         name: MyPy
         description: This hook runs MyPy to check Python type hints.
+        # args: ["--explicit-package-bases"]
