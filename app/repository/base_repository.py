@@ -18,8 +18,8 @@ class BaseRepository:
         self.session_factory = session_factory
         self.model = model
 
-    def read_by_options(self, schema, eager=False):
-        with self.session_factory() as session:
+    async def read_by_options(self, schema, eager=False):
+        async with self.session_factory() as session:
             schema_as_dict = schema.dict(exclude_none=True)
             ordering = schema_as_dict.get("ordering", settings.ORDERING)
             order_query = (
@@ -30,7 +30,7 @@ class BaseRepository:
             page = schema_as_dict.get("page", settings.PAGE)
             page_size = schema_as_dict.get("page_size", settings.PAGE_SIZE)
             filter_options = dict_to_sqlalchemy_filter_options(self.model, schema.dict(exclude_none=True))
-            query = session.query(self.model)
+            query = await session.query(self.model)
             if eager:
                 for eager in getattr(self.model, "eagers", []):
                     query = query.options(joinedload(getattr(self.model, eager)))
@@ -51,9 +51,9 @@ class BaseRepository:
                 },
             }
 
-    def read_by_id(self, id: int, eager=False):
-        with self.session_factory() as session:
-            query = session.query(self.model)
+    async def read_by_id(self, id: int, eager=False):
+        async with self.session_factory() as session:
+            query = await session.query(self.model)
             if eager:
                 for eager in getattr(self.model, "eagers", []):
                     query = query.options(joinedload(getattr(self.model, eager)))
@@ -62,39 +62,39 @@ class BaseRepository:
                 raise NotFoundError(detail=f"not found id : {id}")
             return query
 
-    def create(self, schema):
-        with self.session_factory() as session:
+    async def create(self, schema):
+        async with self.session_factory() as session:
             query = self.model(**schema.dict())
             try:
-                session.add(query)
-                session.commit()
-                session.refresh(query)
+                await session.add(query)
+                await session.commit()
+                await session.refresh(query)
             except IntegrityError as e:
                 raise DuplicatedError(detail=str(e.orig))
             return query
 
-    def update(self, id: int, schema):
-        with self.session_factory() as session:
-            session.query(self.model).filter(self.model.id == id).update(schema.dict(exclude_none=True))
-            session.commit()
+    async def update(self, id: int, schema):
+        async with self.session_factory() as session:
+            await session.query(self.model).filter(self.model.id == id).update(schema.dict(exclude_none=True))
+            await session.commit()
             return self.read_by_id(id)
 
-    def update_attr(self, id: int, column: str, value):
-        with self.session_factory() as session:
-            session.query(self.model).filter(self.model.id == id).update({column: value})
-            session.commit()
+    async def update_attr(self, id: int, column: str, value):
+        async with self.session_factory() as session:
+            await session.query(self.model).filter(self.model.id == id).update({column: value})
+            await session.commit()
             return self.read_by_id(id)
 
-    def whole_update(self, id: int, schema):
-        with self.session_factory() as session:
-            session.query(self.model).filter(self.model.id == id).update(schema.dict())
-            session.commit()
+    async def whole_update(self, id: int, schema):
+        async with self.session_factory() as session:
+            await session.query(self.model).filter(self.model.id == id).update(schema.dict())
+            await session.commit()
             return self.read_by_id(id)
 
-    def delete_by_id(self, id: int):
-        with self.session_factory() as session:
+    async def delete_by_id(self, id: int):
+        async with self.session_factory() as session:
             query = session.query(self.model).filter(self.model.id == id).first()
             if not query:
                 raise NotFoundError(detail=f"not found id : {id}")
-            session.delete(query)
-            session.commit()
+            await session.delete(query)
+            await session.commit()
