@@ -8,6 +8,10 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     TEST_DATABASE_URL: str
 
+    SECRET_KEY: str
+    ALGORITHM: str
+    ACCESS_TOKEN_EXPIRE_MINUTES: str
+
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
     POSTGRES_DB: str
@@ -15,3 +19,8 @@ class Settings(BaseSettings):
     PAGE: int
     PAGE_SIZE: int
     ORDERING: str
+
+    DATETIME_FORMAT: str = "%Y-%m-%dT%H:%M:%S"
+
+
+settings = Settings()
