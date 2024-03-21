@@ -1,8 +1,8 @@
-from factory import Faker, fuzzy
-import factory
-from app.models import User
-from uuid import uuid4
 from datetime import datetime
+
+import factory
+
+from app.models import User
 
 
 def factory_object_to_dict(factory_instance):
@@ -18,9 +18,8 @@ class UserFactory(factory.Factory):
 
     # Definindo os atributos da fábrica
     # id = datetime.now()
-    email = factory.Sequence(lambda n: f'user{n}@example.com')  # Gera emails fictícios sequenciais
-    username = factory.Sequence(lambda n: f'user{n}')  # Gera usernames fictícios sequenciais
-    password = factory.Faker('password')  # Gera senhas fictícias
+    email = factory.Sequence(lambda n: f"user{n}@example.com")  # Gera emails fictícios sequenciais
+    username = factory.Sequence(lambda n: f"user{n}")  # Gera usernames fictícios sequenciais
+    password = factory.Faker("password")  # Gera senhas fictícias
     created_at = datetime.now()  # Define o valor padrão de created_at
     updated_at = datetime.now()
-
