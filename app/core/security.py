@@ -1,5 +1,6 @@
 from datetime import datetime
 from datetime import timedelta
+from typing import Dict
 from typing import Tuple
 
 from fastapi import Request
@@ -15,7 +16,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 settings = Settings()
 
 
-def create_access_token(subject: dict, expires_delta: timedelta = timedelta(minutes=30)) -> Tuple[str, str]:
+def create_access_token(subject: Dict[str, str], expires_delta: timedelta = timedelta(minutes=30)) -> Tuple[str, str]:
     expire = (
         datetime.now() + expires_delta
         if expires_delta
@@ -28,7 +29,7 @@ def create_access_token(subject: dict, expires_delta: timedelta = timedelta(minu
     return encoded_jwt, expiration_datetime
 
 
-def verify_passwor(plain_password: str, hashed_password: str) -> bool:
+def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
 

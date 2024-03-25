@@ -1,13 +1,15 @@
+import asyncio
 from contextlib import AbstractContextManager
 from contextlib import asynccontextmanager
 from typing import Any
 from typing import Callable
 
-from sqlalchemy import create_engine
-from sqlalchemy import orm
+from sqlalchemy.ext.asyncio import async_scoped_session
+from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.ext.declarative import as_declarative
+from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.ext.declarative import declared_attr
+from sqlalchemy.orm import as_declarative
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.expression import and_
 
@@ -35,17 +37,24 @@ class BaseModel:
 
 class Database:
     def __init__(self, db_url: str = Settings().DATABASE_URL) -> None:
-        self._engine = create_engine(db_url, echo=True)
-        self._session_factory = orm.scoped_session(
-            orm.sessionmaker(autocommit=False, autoflush=False, bind=self._engine, class_=AsyncSession)
+        self._engine = create_async_engine(db_url, echo=True, pool_pre_ping=True)
+        self._session_factory = async_scoped_session(
+            async_sessionmaker(bind=self._engine, autocommit=False, autoflush=False, class_=AsyncSession),
+            scopefunc=asyncio.current_task,
         )
 
     def create_database(self) -> None:
         BaseModel.metadata.create_all(self._engine)
 
+    def drop_all(self) -> None:
+        BaseModel.metadata.drop_all(self._engine)
+
+    def get_session(self) -> AsyncSession:
+        return self._session_factory()
+
     @asynccontextmanager
     async def session(self) -> Callable[..., AbstractContextManager[Session]]:
-        session: Session = await self._session_factory()
+        session: Session = self._session_factory()
         try:
             yield session
         except Exception:
