@@ -7,6 +7,7 @@ from app.core.settings import settings
 from app.models.base_model import BaseModel
 from app.repository.base_repository import BaseRepository
 from app.repository.user_repository import UserRepository
+from tests.factories import UserFactory
 
 
 @pytest.fixture
@@ -21,6 +22,17 @@ def session():
         session.rollback()
 
     BaseModel.metadata.drop_all(engine)
+
+
+@pytest.fixture
+def user(session):
+    user = UserFactory()
+
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+
+    return user
 
 
 @pytest.fixture
