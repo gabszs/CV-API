@@ -1,5 +1,6 @@
 from contextlib import AbstractContextManager
 from typing import Callable
+from uuid import UUID
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
@@ -51,7 +52,7 @@ class BaseRepository:
                 },
             }
 
-    async def read_by_id(self, id: int, eager=False):
+    async def read_by_id(self, id: UUID, eager=False):
         async with self.session_factory() as session:
             query = await session.query(self.model)
             if eager:
@@ -73,25 +74,25 @@ class BaseRepository:
                 raise DuplicatedError(detail=str(e.orig))
             return query
 
-    async def update(self, id: int, schema):
+    async def update(self, id: UUID, schema):
         async with self.session_factory() as session:
             await session.query(self.model).filter(self.model.id == id).update(schema.dict(exclude_none=True))
             await session.commit()
             return self.read_by_id(id)
 
-    async def update_attr(self, id: int, column: str, value):
+    async def update_attr(self, id: UUID, column: str, value):
         async with self.session_factory() as session:
             await session.query(self.model).filter(self.model.id == id).update({column: value})
             await session.commit()
             return self.read_by_id(id)
 
-    async def whole_update(self, id: int, schema):
+    async def whole_update(self, id: UUID, schema):
         async with self.session_factory() as session:
             await session.query(self.model).filter(self.model.id == id).update(schema.dict())
             await session.commit()
             return self.read_by_id(id)
 
-    async def delete_by_id(self, id: int):
+    async def delete_by_id(self, id: UUID):
         async with self.session_factory() as session:
             query = session.query(self.model).filter(self.model.id == id).first()
             if not query:
