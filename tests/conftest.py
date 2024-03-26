@@ -12,7 +12,7 @@ from tests.factories import UserFactory
 
 @pytest.fixture
 def session():
-    sync_db_url = settings.DATABASE_URL.replace("+asyncpg", "")
+    sync_db_url = settings.TEST_DATABASE_URL.replace("+asyncpg", "")
 
     engine = create_engine(sync_db_url)
     Session = sessionmaker(autoflush=False, autocommit=False, bind=engine)
@@ -37,7 +37,7 @@ def user(session):
 
 @pytest.fixture
 def async_session():
-    db = Database(settings.DATABASE_URL)
+    db = Database(settings.TEST_DATABASE_URL)
     return db.get_session()
 
 
