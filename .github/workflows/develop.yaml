@@ -7,7 +7,7 @@ jobs:
 
     env:
       DATABASE_URL: ${{secrets.DATABASE_URL}}
-      TEST_DATABASE_URL: ${{vars.CICD_TEST_DATABASE_URL}}
+      TEST_DATABASE_URL: ${{vars.TEST_DATABASE_URL}}
       SECRET_KEY: ${{secrets.SECRET_KEY}}
       ALGORITHM: ${{secrets.ALGORITHM}}
       ACCESS_TOKEN_EXPIRE_MINUTES: ${{secrets.ACCESS_TOKEN_EXPIRE_MINUTES}}
