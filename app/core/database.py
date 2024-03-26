@@ -43,11 +43,18 @@ class Database:
             scopefunc=asyncio.current_task,
         )
 
-    def create_database(self) -> None:
-        BaseModel.metadata.create_all(self._engine)
+    async def create_database(self) -> None:
+        async with self._engine.begin() as conn:
+            await conn.run_sync(BaseModel.metadata.create_all)
 
-    def drop_all(self) -> None:
-        BaseModel.metadata.drop_all(self._engine)
+    # async def get_table_names(self) -> None:
+    #     async with self._engine.begin() as conn:
+    #         await conn.run_sync(BaseModel.metadata.reflect)
+    #         return BaseModel.metadata.sorted_tables, BaseModel.metadata.tables.keys()
+
+    async def drop_all(self) -> None:
+        async with self._engine.begin() as conn:
+            await conn.run_sync(BaseModel.metadata.drop_all)
 
     def get_session(self) -> AsyncSession:
         return self._session_factory()
