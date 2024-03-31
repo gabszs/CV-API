@@ -5,7 +5,7 @@ from app.models.base_model import BaseModel
 
 
 class User(BaseModel):
-    __tablename__ = "users"
+    __tablename__ = "user"
 
     email: Mapped[str] = mapped_column(unique=True)
     username: Mapped[str] = mapped_column(unique=True)
