@@ -16,11 +16,10 @@ dependency-injector = "^4.41.0"
 python-jose = "^3.3.0"
 pyjwt = "^2.8.0"
 passlib = {extras = ["bcrypt"], version = "^1.7.4"}
-psycopg2-binary = "^2.9.9"
+psycopg = {extras = ["binary"], version = "^3.1.18"}
 asyncpg = "^0.29.0"
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^7.4.3"
 pytest-cov = "^4.1.0"
 taskipy = "^1.12.2"
 ruff = "^0.1.8"
@@ -30,6 +29,8 @@ factory-boy = "^3.3.0"
 freezegun = "^1.4.0"
 faker = "^24.1.0"
 ipykernel = "^6.29.3"
+pytest = "^8.1.1"
+pytest-postgresql = "^6.0.0"
 
 [build-system]
 requires = ["poetry-core"]
@@ -39,7 +40,9 @@ build-backend = "poetry.core.masonry.api"
 lint = 'ruff .'
 pre_test = 'task lint'
 test = 'pytest -s -x --cov=app -vv'
+verbose_test = 'pytest --verbose --show-capture=all --exitfirst --cov=app --cov-report=term-missing -vv'
 commit_hook = "pre-commit run --all-files"
+post_verbose_test = 'coverage html'
 post_test = 'coverage html'
 
 [tool.ruff]
