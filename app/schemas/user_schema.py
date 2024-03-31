@@ -13,9 +13,6 @@ class BaseUser(BaseModel):
     email: str
     username: str
 
-    class Config:
-        from_attributes = True
-
 
 class BaseUserWithPassword(BaseUser):
     password: str
