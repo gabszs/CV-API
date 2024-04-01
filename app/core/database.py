@@ -1,19 +1,19 @@
 import asyncio
-from contextlib import AbstractContextManager
 from contextlib import asynccontextmanager
-from typing import Any
-from typing import Callable
+from typing import AsyncIterator
 
 from sqlalchemy.ext.asyncio import async_scoped_session
 from sqlalchemy.ext.asyncio import async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncConnection
+from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.asyncio import create_async_engine
-from sqlalchemy.ext.declarative import declared_attr
-from sqlalchemy.orm import as_declarative
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.expression import and_
 
-from app.core.settings import Settings
+from app.core.settings import settings
+from app.models import BaseModel
+# from sqlalchemy.orm import declarative_base
 
 SQLALCHEMY_QUERY_MAPPER = {
     "eq": "__eq__",
@@ -25,18 +25,20 @@ SQLALCHEMY_QUERY_MAPPER = {
 }
 
 
-@as_declarative()
-class BaseModel:
-    id: Any
-    __name__: str
+# @as_declarative()
+# class BaseModel:
+#     id: Any
+#     __name__: str
 
-    @declared_attr
-    def __table__(cls):
-        return cls.__name__.lower()
+#     @declared_attr
+#     def __table__(cls):
+#         return cls.__name__.lower()
+
+# BaseModel = declarative_base()
 
 
 class Database:
-    def __init__(self, db_url: str = Settings().DATABASE_URL) -> None:
+    def __init__(self, db_url: str = settings.DATABASE_URL) -> None:
         self._engine = create_async_engine(db_url, echo=True, pool_pre_ping=True)
         self._session_factory = async_scoped_session(
             async_sessionmaker(bind=self._engine, autocommit=False, autoflush=False, class_=AsyncSession),
@@ -56,11 +58,20 @@ class Database:
         async with self._engine.begin() as conn:
             await conn.run_sync(BaseModel.metadata.drop_all)
 
+    # async def create_database(self, connection: AsyncConnection) -> None:
+    #     # from app.models.base_model import BaseModel
+    #     # from app.models.api_models import User
+    #     # BaseModel, User
+    #     await connection.run_sync(BaseModel.metadata.create_all)
+
+    # async def drop_all(self, connection: AsyncConnection) -> None:
+    #     await connection.run_sync(BaseModel.metadata.drop_all)
+
     def get_session(self) -> AsyncSession:
         return self._session_factory()
 
     @asynccontextmanager
-    async def session(self) -> Callable[..., AbstractContextManager[Session]]:
+    async def session(self):
         session: Session = self._session_factory()
         try:
             yield session
@@ -71,10 +82,10 @@ class Database:
             await session.close()
 
 
-async def get_session() -> Session:
-    db = Database()
-    async with db.session() as session:
-        yield session
+# async def get_db():
+#     db = Database()
+#     async with db.session() as session:
+#         yield session
 
 
 def dict_to_sqlalchemy_filter_options(model_class, search_option_dict):
@@ -109,3 +120,80 @@ def dict_to_sqlalchemy_filter_options(model_class, search_option_dict):
             sql_alchemy_filter_options.append(getattr(attr, bool_command)(None))
 
     return and_(True, *sql_alchemy_filter_options)
+
+
+# from typing import Any
+# from sqlalchemy.ext.declarative import declared_attr
+# from sqlalchemy.orm import as_declarative
+
+SQLALCHEMY_QUERY_MAPPER = {
+    "eq": "__eq__",
+    "ne": "__ne__",
+    "lt": "__lt__",
+    "lte": "__le__",
+    "gt": "__gt__",
+    "gte": "__ge__",
+}
+
+
+# BaseModel = declarative_base()
+
+
+class DatabaseSessionManager:
+    def __init__(self):
+        self._engine: AsyncEngine | None = None
+        self._sessionmaker: async_sessionmaker | None = None
+
+    def init(self, database_url: str = settings.DATABASE_URL):
+        self._engine = create_async_engine(database_url)
+        self._sessionmaker = async_scoped_session(
+            async_sessionmaker(autocommit=False, bind=self._engine), scopefunc=asyncio.current_task
+        )
+
+    async def close(self):
+        if self._engine is None:
+            raise Exception("DatabaseSessionManager is not initialized")
+        await self._engine.dispose()
+        self._engine = None
+        self._sessionmaker = None
+
+    @asynccontextmanager
+    async def connect(self) -> AsyncIterator[AsyncConnection]:
+        if self._engine is None:
+            raise Exception("DatabaseSessionManager is not initialized")
+
+        async with self._engine.begin() as connection:
+            try:
+                yield connection
+            except Exception:
+                await connection.rollback()
+                raise
+
+    @asynccontextmanager
+    async def session(self) -> AsyncIterator[AsyncSession]:
+        if self._sessionmaker is None:
+            raise Exception("DatabaseSessionManager is not initialized")
+
+        session = self._sessionmaker()
+        try:
+            yield session
+        except Exception:
+            await session.rollback()
+            raise
+        finally:
+            await session.close()
+
+    # Used for testing
+    async def create_all(self, connection: AsyncConnection):
+        await connection.run_sync(BaseModel.metadata.create_all)
+
+    async def drop_all(self, connection: AsyncConnection):
+        await connection.run_sync(BaseModel.metadata.drop_all)
+
+
+sessionmanager = DatabaseSessionManager()
+
+
+async def get_db():
+    async with sessionmanager.session() as session:
+        yield session
