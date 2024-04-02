@@ -27,6 +27,11 @@ async def show_users_in_table(session):
         ic(user_row)
 
 
+@pytest.fixture
+def user_factory():
+    return UserFactory()
+
+
 @pytest.fixture(autouse=True)
 def app():
     with ExitStack():
@@ -65,23 +70,34 @@ async def create_tables(connection_test):
 
 
 @pytest_asyncio.fixture
-async def user(connection_test):
-    user_factory = UserFactory()
-
+async def session(connection_test):
     async with sessionmanager.session() as session:
-        # await show_users_in_table(session)
-        session.add(user_factory)
-        await session.commit()
-        await session.refresh(user_factory)
-        yield user_factory
-
-        await session.delete(user_factory)
-        await session.commit()
+        yield session
 
 
-@pytest.fixture
-def user_factory():
-    return UserFactory()
+@pytest_asyncio.fixture
+async def user(session):
+    # await show_users_in_table(session)
+    user = UserFactory()
+    session.add(user)
+    await session.commit()
+    await session.refresh(user)
+    yield user
+
+    await session.delete(user)
+    await session.commit()
+
+
+@pytest_asyncio.fixture
+async def other_user(session):
+    other_user = UserFactory()
+    session.add(other_user)
+    await session.commit()
+    await session.refresh(other_user)
+    yield other_user
+
+    await session.delete(other_user)
+    await session.commit()
 
 
 @pytest.fixture
