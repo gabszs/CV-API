@@ -22,5 +22,7 @@ class Settings(BaseSettings):
 
     DATETIME_FORMAT: str = "%Y-%m-%dT%H:%M:%S"
 
+    OPENAI_API_KEY: str
+
 
 settings = Settings()
