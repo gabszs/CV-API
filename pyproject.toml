@@ -18,6 +18,7 @@ pyjwt = "^2.8.0"
 passlib = {extras = ["bcrypt"], version = "^1.7.4"}
 psycopg = {extras = ["binary"], version = "^3.1.18"}
 asyncpg = "^0.29.0"
+crewai = "^0.22.5"
 
 [tool.poetry.group.dev.dependencies]
 pytest-cov = "^4.1.0"
