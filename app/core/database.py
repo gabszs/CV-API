@@ -8,12 +8,13 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.expression import and_
 
 from app.core.settings import settings
 from app.models import BaseModel
-# from sqlalchemy.orm import declarative_base
+
 
 SQLALCHEMY_QUERY_MAPPER = {
     "eq": "__eq__",
@@ -49,23 +50,22 @@ class Database:
         async with self._engine.begin() as conn:
             await conn.run_sync(BaseModel.metadata.create_all)
 
-    # async def get_table_names(self) -> None:
-    #     async with self._engine.begin() as conn:
-    #         await conn.run_sync(BaseModel.metadata.reflect)
-    #         return BaseModel.metadata.sorted_tables, BaseModel.metadata.tables.keys()
-
     async def drop_all(self) -> None:
         async with self._engine.begin() as conn:
             await conn.run_sync(BaseModel.metadata.drop_all)
 
-    # async def create_database(self, connection: AsyncConnection) -> None:
-    #     # from app.models.base_model import BaseModel
-    #     # from app.models.api_models import User
-    #     # BaseModel, User
-    #     await connection.run_sync(BaseModel.metadata.create_all)
+    async def create_database_from_base(self, base_model: declarative_base) -> None:
+        async with self._engine.begin() as conn:
+            await conn.run_sync(base_model.metadata.create_all)
 
-    # async def drop_all(self, connection: AsyncConnection) -> None:
-    #     await connection.run_sync(BaseModel.metadata.drop_all)
+    async def drop_all_from_base(self, base_model: declarative_base) -> None:
+        async with self._engine.begin() as conn:
+            await conn.run_sync(base_model.metadata.drop_all)
+
+    async def get_table_names(self) -> None:
+        async with self._engine.begin() as conn:
+            await conn.run_sync(BaseModel.metadata.reflect)
+            return BaseModel.metadata.sorted_tables, BaseModel.metadata.tables.keys()
 
     def get_session(self) -> AsyncSession:
         return self._session_factory()
@@ -189,6 +189,12 @@ class DatabaseSessionManager:
 
     async def drop_all(self, connection: AsyncConnection):
         await connection.run_sync(BaseModel.metadata.drop_all)
+
+    async def create_all_from_base(self, connection: AsyncConnection, base_model: declarative_base):
+        await connection.run_sync(base_model.metadata.create_all)
+
+    async def drop_all_from_base(self, connection: AsyncConnection, base_model: declarative_base):
+        await connection.run_sync(base_model.metadata.drop_all)
 
 
 sessionmanager = DatabaseSessionManager()
