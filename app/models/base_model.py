@@ -11,7 +11,7 @@ from sqlalchemy.orm import MappedAsDataclass
 from sqlalchemy.sql import func
 
 
-class BaseModel(MappedAsDataclass, DeclarativeBase):
+class Base(MappedAsDataclass, DeclarativeBase):
     __allow_unmapped__ = True
     id: Mapped[UUID] = mapped_column(
         types.Uuid, primary_key=True, init=False, server_default=text("gen_random_uuid()"), unique=True
