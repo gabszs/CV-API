@@ -15,6 +15,7 @@ from app.main import init_app
 from app.models import User
 from tests.factories import UserFactory
 
+
 test_db = factories.postgresql_noproc(
     user="app_user", password="app_password", host="localhost", port="5432", dbname="test_db"
 )
