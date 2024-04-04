@@ -14,11 +14,11 @@ from app.core.database import sessionmanager
 from app.main import init_app
 from app.models import User
 from tests.factories import UserFactory
+# from sqlalchemy.engine import create_engine
+# from app.models import Base
 
 
-test_db = factories.postgresql_noproc(
-    user="app_user", password="app_password", host="localhost", port="5432", dbname="test_db"
-)
+test_db = factories.postgresql_noproc(user="app_user", password="app_password", host="localhost", port="5432")
 
 
 async def show_users_in_table(session):
@@ -37,6 +37,12 @@ def user_factory():
 def app():
     with ExitStack():
         yield init_app(init_db=False)
+
+
+@pytest.fixture
+def client(app):
+    with TestClient(app) as client:
+        yield client
 
 
 @pytest.fixture(scope="session")
@@ -59,6 +65,9 @@ async def connection_test(test_db, event_loop):
     with DatabaseJanitor(pg_user, pg_host, pg_port, pg_db, pg_version, pg_password):
         connection_str = f"postgresql+psycopg://{pg_user}:@{pg_host}:{pg_port}/{pg_db}"
         sessionmanager.init(connection_str)
+        # engine = create_engine(connection_str)
+        # with engine.connect() as conn:
+        #     Base.metadata.create_all(conn)
         yield
         await sessionmanager.close()
 
@@ -68,15 +77,26 @@ async def create_tables(connection_test):
     async with sessionmanager.connect() as connection:
         await sessionmanager.drop_all(connection)
         await sessionmanager.create_all(connection)
+        # await sessionmanager.drop_all_from_base(connection, Base)
+        # await sessionmanager.create_all_from_base(connection, Base)
 
 
-@pytest_asyncio.fixture
+@pytest.fixture(scope="function", autouse=True)
+async def session_override(app, connection_test):
+    async def get_db_override():
+        async with sessionmanager.session() as session:
+            yield session
+
+    app.dependency_overrides[get_db] = get_db_override
+
+
+@pytest_asyncio.fixture(scope="function")
 async def session(connection_test):
     async with sessionmanager.session() as session:
         yield session
 
 
-@pytest_asyncio.fixture
+@pytest_asyncio.fixture()
 async def user(session):
     # await show_users_in_table(session)
     user = UserFactory()
@@ -89,7 +109,7 @@ async def user(session):
     await session.commit()
 
 
-@pytest_asyncio.fixture
+@pytest_asyncio.fixture()
 async def other_user(session):
     other_user = UserFactory()
     session.add(other_user)
@@ -99,18 +119,3 @@ async def other_user(session):
 
     await session.delete(other_user)
     await session.commit()
-
-
-@pytest.fixture
-def client(app):
-    with TestClient(app) as client:
-        yield client
-
-
-@pytest.fixture(scope="function", autouse=True)
-async def session_override(app, connection_test):
-    async def get_db_override():
-        async with sessionmanager.session() as session:
-            yield session
-
-    app.dependency_overrides[get_db] = get_db_override
