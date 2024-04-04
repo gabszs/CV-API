@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.sql.expression import and_
 
 from app.core.settings import settings
-from app.models import BaseModel
+from app.models import Base
 
 
 SQLALCHEMY_QUERY_MAPPER = {
@@ -48,11 +48,11 @@ class Database:
 
     async def create_database(self) -> None:
         async with self._engine.begin() as conn:
-            await conn.run_sync(BaseModel.metadata.create_all)
+            await conn.run_sync(Base.metadata.create_all)
 
     async def drop_all(self) -> None:
         async with self._engine.begin() as conn:
-            await conn.run_sync(BaseModel.metadata.drop_all)
+            await conn.run_sync(Base.metadata.drop_all)
 
     async def create_database_from_base(self, base_model: declarative_base) -> None:
         async with self._engine.begin() as conn:
@@ -64,8 +64,8 @@ class Database:
 
     async def get_table_names(self) -> None:
         async with self._engine.begin() as conn:
-            await conn.run_sync(BaseModel.metadata.reflect)
-            return BaseModel.metadata.sorted_tables, BaseModel.metadata.tables.keys()
+            await conn.run_sync(Base.metadata.reflect)
+            return Base.metadata.sorted_tables, Base.metadata.tables.keys()
 
     def get_session(self) -> AsyncSession:
         return self._session_factory()
@@ -136,7 +136,7 @@ SQLALCHEMY_QUERY_MAPPER = {
 }
 
 
-# BaseModel = declarative_base()
+# Base = declarative_base()
 
 
 class DatabaseSessionManager:
@@ -149,6 +149,10 @@ class DatabaseSessionManager:
         self._sessionmaker = async_scoped_session(
             async_sessionmaker(autocommit=False, bind=self._engine), scopefunc=asyncio.current_task
         )
+
+    def sync_create_all(self, engine):
+        Base.metadata.create_all(engine)
+        print(f"Criando metada: {Base.metadata.__dict__}")
 
     async def close(self):
         if self._engine is None:
@@ -185,10 +189,11 @@ class DatabaseSessionManager:
 
     # Used for testing
     async def create_all(self, connection: AsyncConnection):
-        await connection.run_sync(BaseModel.metadata.create_all)
+        await connection.run_sync(Base.metadata.create_all)
+        print(f"Metadata: {Base.metadata.__dict__}")
 
     async def drop_all(self, connection: AsyncConnection):
-        await connection.run_sync(BaseModel.metadata.drop_all)
+        await connection.run_sync(Base.metadata.drop_all)
 
     async def create_all_from_base(self, connection: AsyncConnection, base_model: declarative_base):
         await connection.run_sync(base_model.metadata.create_all)
