@@ -41,10 +41,8 @@ SQLALCHEMY_QUERY_MAPPER = {
 class Database:
     def __init__(self, db_url: str = settings.DATABASE_URL) -> None:
         self._engine = create_async_engine(db_url, echo=True, pool_pre_ping=True)
-        self._session_factory = async_scoped_session(
-            async_sessionmaker(bind=self._engine, autocommit=False, autoflush=False, class_=AsyncSession),
-            scopefunc=asyncio.current_task,
-        )
+        self._session_factory = async_sessionmaker(bind=self._engine, autocommit=False, autoflush=False, class_=AsyncSession),
+           
 
     async def create_database(self) -> None:
         async with self._engine.begin() as conn:
