@@ -1,29 +1,46 @@
 import asyncio
-from asyncio import WindowsSelectorEventLoopPolicy  # noqa
+import sys
+from asyncio import WindowsSelectorEventLoopPolicy
 from contextlib import ExitStack
 
 import pytest
 import pytest_asyncio
+import sqlalchemy as sa
 from fastapi.testclient import TestClient
-from pytest_postgresql import factories  # noqa
-from pytest_postgresql.janitor import DatabaseJanitor  # noqa
-from sqlalchemy import select  # noqa
-from sqlalchemy.testing.entities import ComparableEntity  # noqa
 
 from app.core.database import get_db
 from app.core.database import sessionmanager
 from app.core.settings import settings
 from app.main import init_app
-from app.models import User  # noqa
+from app.models import User
 from tests.factories import UserFactory
 
 
 @pytest.fixture(scope="session")
-def event_loop(request):
-    asyncio.set_event_loop_policy(WindowsSelectorEventLoopPolicy())
-    loop = asyncio.get_event_loop()
+def event_loop():
+    """
+    Creates an instance of the default event loop for the test session.
+    """
+    if sys.platform.startswith("win") and sys.version_info[:2] >= (3, 8):
+        # Avoid "RuntimeError: Event loop is closed" on Windows when tearing down tests
+        # https://github.com/encode/httpx/issues/914
+        asyncio.set_event_loop_policy(WindowsSelectorEventLoopPolicy())
+
+    loop = asyncio.new_event_loop()
     yield loop
     loop.close()
+
+
+@pytest.fixture(scope="session")
+def _database_url():
+    return settings.TEST_DATABASE_URL
+
+
+@pytest.fixture(scope="session")
+def init_database():
+    from app.models import Base
+
+    return Base.metadata.create_all
 
 
 @pytest.fixture(autouse=True)
@@ -34,13 +51,13 @@ def app():
 
 @pytest.fixture
 def client(app):
-    with TestClient(app) as c:
-        yield c
+    with TestClient(app) as client:
+        yield client
 
 
 @pytest_asyncio.fixture(scope="function")
-async def db(event_loop):
-    sessionmanager.init(settings.TEST_DATABASE_URL)
+async def db(event_loop, _database_url):
+    sessionmanager.init(_database_url)
     async with sessionmanager.connect() as conn:
         await sessionmanager.drop_all(conn)
         await sessionmanager.create_all(conn)
@@ -50,9 +67,11 @@ async def db(event_loop):
     await sessionmanager.close()
 
 
-@pytest_asyncio.fixture(scope="function")
+@pytest_asyncio.fixture()
 async def session(db):
-    async with db.session() as session:
+    # async with AsyncSession(sessionmanager._engine) as session:
+    #     yield session
+    async with sessionmanager.session() as session:
         yield session
 
 
@@ -61,8 +80,8 @@ async def user(session):
     user = UserFactory()
     session.add(user)
     await session.commit()
-    await session.refresh(user)
-    return user
+    result = await session.execute(sa.select(User))
+    return result.scalars().all()[0]
 
 
 @pytest_asyncio.fixture()
@@ -70,8 +89,14 @@ async def other_user(session):
     other_user = UserFactory()
     session.add(other_user)
     await session.commit()
-    await session.refresh(other_user)
-    return other_user
+    result = await session.execute(sa.select(User))
+    return result.scalars().all()[1]
+
+
+@pytest_asyncio.fixture()
+async def all_users(session):
+    result = await session.execute(sa.select(User))
+    return result.scalars().all()
 
 
 @pytest.fixture(scope="function")
