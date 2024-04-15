@@ -41,8 +41,9 @@ SQLALCHEMY_QUERY_MAPPER = {
 class Database:
     def __init__(self, db_url: str = settings.DATABASE_URL) -> None:
         self._engine = create_async_engine(db_url, echo=True, pool_pre_ping=True)
-        self._session_factory = async_sessionmaker(bind=self._engine, autocommit=False, autoflush=False, class_=AsyncSession),
-           
+        self._session_factory = (
+            async_sessionmaker(bind=self._engine, autocommit=False, autoflush=False, class_=AsyncSession),
+        )
 
     async def create_database(self) -> None:
         async with self._engine.begin() as conn:
@@ -148,9 +149,11 @@ class DatabaseSessionManager:
             async_sessionmaker(autocommit=False, bind=self._engine), scopefunc=asyncio.current_task
         )
 
+    def session_factory(self):
+        return self._sessionmaker
+
     def sync_create_all(self, engine):
         Base.metadata.create_all(engine)
-        print(f"Criando metada: {Base.metadata.__dict__}")
 
     async def close(self):
         if self._engine is None:
@@ -188,7 +191,6 @@ class DatabaseSessionManager:
     # Used for testing
     async def create_all(self, connection: AsyncConnection):
         await connection.run_sync(Base.metadata.create_all)
-        print(f"Metadata: {Base.metadata.__dict__}")
 
     async def drop_all(self, connection: AsyncConnection):
         await connection.run_sync(Base.metadata.drop_all)
@@ -206,3 +208,7 @@ sessionmanager = DatabaseSessionManager()
 async def get_db():
     async with sessionmanager.session() as session:
         yield session
+
+
+async def get_session_factory():
+    return sessionmanager.session_factory()
