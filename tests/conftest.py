@@ -31,6 +31,11 @@ def event_loop():
     loop.close()
 
 
+@pytest.fixture
+def user_factory():
+    return UserFactory()
+
+
 @pytest.fixture(scope="session")
 def _database_url():
     return settings.TEST_DATABASE_URL
