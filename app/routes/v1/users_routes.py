@@ -5,31 +5,33 @@ from fastapi import Depends
 
 from app.core.dependencies import CurrentUserDependency
 from app.core.dependencies import UserServiceDependency
-from app.core.security import JWTBearer
 from app.schemas.base_schema import Message
-from app.schemas.user_schema import FindUser
+from app.schemas.user_schema import BaseUserWithPassword
+from app.schemas.user_schema import FindUserByOptions
+from app.schemas.user_schema import FindUserResult
 from app.schemas.user_schema import UpsertUser
 from app.schemas.user_schema import User
 
-router = APIRouter(prefix="/user", tags=["user"], dependencies=[Depends(JWTBearer())])
+router = APIRouter(prefix="/user", tags=["user"])
 
 
-@router.get("", response_model=User)
-async def get_user_list(find_query: FindUser, service: UserServiceDependency, current_user: CurrentUserDependency):
+@router.get("", response_model=FindUserResult)
+async def get_user_list(service: UserServiceDependency, find_query: FindUserByOptions = Depends()):
+    print("entrou no get_all")
     return await service.get_list(find_query)
 
 
 @router.get("/{user_id}", response_model=User)
-async def get_user_by_id(user_id: UUID, service: UserServiceDependency, current_user: CurrentUserDependency):
+async def get_user_by_id(user_id: UUID, service: UserServiceDependency):
     return await service.get_by_id(user_id)
 
 
 @router.post("", status_code=201, response_model=User)
-async def create_user(user: UpsertUser, service: UserServiceDependency, current_user: CurrentUserDependency):
+async def create_user(user: BaseUserWithPassword, service: UserServiceDependency):
     return await service.add(user)
 
 
-@router.patch("/{user_id}", response_model=User)
+@router.put("/{user_id}", response_model=User)
 async def update_user(
     user_id: UUID, user: UpsertUser, service: UserServiceDependency, current_user: CurrentUserDependency
 ):
@@ -40,3 +42,9 @@ async def update_user(
 async def delete_user(user_id: UUID, service: UserServiceDependency, current_user: CurrentUserDependency):
     await service.remove_by_id(user_id)
     return Message(detail="User has been deleted successfully")
+
+
+# @router.patch("/{user_id}", response_model=User)
+# async def change_user_password(user_id: UUID, password: str, roservice: UserServiceDependency, current_user: CurrentUserDependency):
+#     pass
+# 3fa85f64-5717-4562-b3fc-2c963f66afa6
