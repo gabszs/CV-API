@@ -160,3 +160,5 @@ cython_debug/
 .idea/
 .idea/dataSources.xml
 .ruff_cache/
+test.py
+.test.py
