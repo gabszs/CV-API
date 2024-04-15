@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import List
 from typing import Optional
 from typing import Union
+from uuid import UUID
 
 from pydantic import BaseModel
 from pydantic._internal._model_construction import ModelMetaclass
@@ -24,7 +25,7 @@ class AllOptional(ModelMetaclass):
 
 
 class ModelBaseInfo(BaseModel):
-    id: int
+    id: UUID
     created_at: datetime
     updated_at: datetime
 
