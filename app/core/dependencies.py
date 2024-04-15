@@ -6,6 +6,7 @@ from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.database import get_session_factory
 from app.core.exceptions import AuthError
 from app.core.security import JWTBearer
 from app.core.settings import settings
@@ -15,7 +16,7 @@ from app.schemas.auth_schema import Payload
 from app.services.user_service import UserService
 
 
-async def get_user_service(session: Session = Depends(get_db)):
+async def get_user_service(session: Session = Depends(get_session_factory)):
     user_repository = UserRepository(session_factory=session)
     return UserService(user_repository)
 
@@ -33,5 +34,5 @@ async def get_current_user(token: str = Depends(JWTBearer()), service: UserServi
 
 
 SessionDependency = Annotated[Session, Depends(get_db)]
-UserServiceDependency = Annotated[UserService, Depends(get_current_user)]
+UserServiceDependency = Annotated[UserService, Depends(get_user_service)]
 CurrentUserDependency = Annotated[User, Depends(get_current_user)]
