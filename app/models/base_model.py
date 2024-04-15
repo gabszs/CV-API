@@ -12,9 +12,13 @@ from sqlalchemy.sql import func
 
 
 class Base(MappedAsDataclass, DeclarativeBase):
-    __allow_unmapped__ = True
+    __mapper_args__ = {"eager_defaults": True}
     id: Mapped[UUID] = mapped_column(
-        types.Uuid, primary_key=True, init=False, server_default=text("gen_random_uuid()"), unique=True
+        types.Uuid,
+        primary_key=True,
+        init=False,
+        server_default=text("gen_random_uuid()"),
+        unique=True,
     )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
