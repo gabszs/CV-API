@@ -2,13 +2,15 @@ from contextlib import AbstractContextManager
 from typing import Callable
 from uuid import UUID
 
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.core.database import dict_to_sqlalchemy_filter_options
 from app.core.exceptions import DuplicatedError
 from app.core.exceptions import NotFoundError
 from app.core.settings import Settings
+from app.schemas.base_schema import FindBase
+from app.schemas.user_schema import FindUserResult
 
 settings = Settings()
 
@@ -18,36 +20,17 @@ class BaseRepository:
         self.session_factory = session_factory
         self.model = model
 
-    async def read_by_options(self, schema):
+    async def read_by_options(self, schema: FindBase):
         async with self.session_factory() as session:
-            schema_as_dict = schema.dict(exclude_none=True)
-            ordering = schema_as_dict.get("ordering", settings.ORDERING)
-            order_query = (
-                getattr(self.model, ordering[1:]).desc()
-                if ordering.startswith("-")
-                else getattr(self.model, ordering).asc()
-            )
-            page = schema_as_dict.get("page", settings.PAGE)
-            page_size = schema_as_dict.get("page_size", settings.PAGE_SIZE)
-            filter_options = dict_to_sqlalchemy_filter_options(self.model, schema.dict(exclude_none=True))
-            query = await session.query(self.model)
-
-            filtered_query = query.filter(filter_options)
-            query = filtered_query.order_by(order_query)
-            if page_size == "all":
-                query = query.all()
-            else:
-                query = query.limit(page_size).offset((page - 1) * page_size).all()
-            total_count = filtered_query.count()
-            return {
-                "founds": query,
-                "search_options": {
-                    "page": page,
-                    "page_size": page_size,
-                    "ordering": ordering,
-                    "total_count": total_count,
+            query = await session.execute(select(self.model).offset(schema.offset).limit(schema.limit))
+            result = query.scalars().all()
+            return FindUserResult(
+                founds=result,
+                search_options={
+                    "offset": schema.offset,
+                    "limit": schema.limit,
                 },
-            }
+            )
 
     async def read_by_id(self, id: UUID):
         async with self.session_factory() as session:

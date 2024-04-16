@@ -1,7 +1,6 @@
 from datetime import datetime
 from typing import List
 from typing import Optional
-from typing import Union
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -31,9 +30,8 @@ class ModelBaseInfo(BaseModel):
 
 
 class FindBase(BaseModel):
-    ordering: Optional[str]
-    page: Optional[int]
-    page_size: Optional[Union[int, str]]
+    offset: Optional[str]
+    limit: Optional[int]
 
 
 class SearchOptions(FindBase):

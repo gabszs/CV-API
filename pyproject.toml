@@ -6,7 +6,7 @@ authors = ["Gabriel <115580274+gabszs@users.noreply.github.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = ">=3.11,<=3.13"
 fastapi = {extras = ["all"], version = "^0.110.0"}
 pydantic-settings = "^2.2.1"
 icecream = "^2.1.3"
@@ -19,6 +19,7 @@ passlib = {extras = ["bcrypt"], version = "^1.7.4"}
 psycopg = {extras = ["binary"], version = "^3.1.18"}
 asyncpg = "^0.29.0"
 crewai = "^0.22.5"
+alembic = "^1.13.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest-cov = "^4.1.0"

@@ -24,14 +24,7 @@ class User(ModelBaseInfo, BaseUser, metaclass=AllOptional):
 
 
 class FindUser(FindBase, BaseUser, metaclass=AllOptional):
-    email__eq: str
     ...
-
-
-class FindUserByOptions(FindBase):
-    email: Optional[EmailStr]
-    username: Optional[str]
-    email_eq: Optional[str]
 
 
 class UpsertUser(BaseUser, metaclass=AllOptional):

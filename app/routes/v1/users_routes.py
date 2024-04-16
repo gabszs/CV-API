@@ -1,24 +1,24 @@
 from uuid import UUID
 
 from fastapi import APIRouter
-from fastapi import Depends
 
 from app.core.dependencies import CurrentUserDependency
 from app.core.dependencies import UserServiceDependency
+from app.schemas.base_schema import FindBase
 from app.schemas.base_schema import Message
 from app.schemas.user_schema import BaseUserWithPassword
-from app.schemas.user_schema import FindUserByOptions
-from app.schemas.user_schema import FindUserResult
 from app.schemas.user_schema import UpsertUser
 from app.schemas.user_schema import User
 
 router = APIRouter(prefix="/user", tags=["user"])
 
 
-@router.get("", response_model=FindUserResult)
-async def get_user_list(service: UserServiceDependency, find_query: FindUserByOptions = Depends()):
-    print("entrou no get_all")
-    return await service.get_list(find_query)
+# skip: int = 0, limit: int = 100
+# @router.get("", response_model=FindUserResult)
+@router.get("", response_model=Message)
+async def get_user_list(service: UserServiceDependency, offset: int = 0, limit: int = 100):
+    query = FindBase(offset=offset, limit=limit)
+    return await service.get_list(query)
 
 
 @router.get("/{user_id}", response_model=User)
