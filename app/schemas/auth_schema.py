@@ -22,6 +22,11 @@ class Payload(BaseModel):
     username: str
 
 
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
 class SignInResponse(BaseModel):
     access_token: str
     expiration: datetime

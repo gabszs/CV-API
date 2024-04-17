@@ -13,6 +13,7 @@ from app.core.settings import settings
 from app.models import User
 from app.repository.user_repository import UserRepository
 from app.schemas.auth_schema import Payload
+from app.services.auth_service import AuthService
 from app.services.user_service import UserService
 
 
@@ -33,6 +34,12 @@ async def get_current_user(token: str = Depends(JWTBearer()), service: UserServi
     return current_user
 
 
+async def get_auth_service(session: Session = Depends(get_session_factory)):
+    user_repository = UserRepository(session_factory=session)
+    return AuthService(user_repository=user_repository)
+
+
 SessionDependency = Annotated[Session, Depends(get_db)]
 UserServiceDependency = Annotated[UserService, Depends(get_user_service)]
 CurrentUserDependency = Annotated[User, Depends(get_current_user)]
+AuthServiceDependency = Annotated[AuthService, Depends(get_auth_service)]

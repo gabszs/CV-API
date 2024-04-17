@@ -30,11 +30,13 @@ class ModelBaseInfo(BaseModel):
 
 
 class FindBase(BaseModel):
-    offset: Optional[str]
+    offset: Optional[int]
     limit: Optional[int]
 
 
 class SearchOptions(FindBase):
+    offset: Optional[int]
+    limit: Optional[int]
     total_count: Optional[int]
 
 

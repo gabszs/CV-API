@@ -1,7 +1,7 @@
 from typing import List
-from typing import Optional
 
 from pydantic import BaseModel
+from pydantic import ConfigDict
 from pydantic import EmailStr
 
 from app.schemas.base_schema import AllOptional
@@ -19,7 +19,8 @@ class BaseUserWithPassword(BaseUser):
     password: str
 
 
-class User(ModelBaseInfo, BaseUser, metaclass=AllOptional):
+class User(ModelBaseInfo, BaseUser):
+    model_config = ConfigDict(from_attributes=True)
     ...
 
 
@@ -32,5 +33,5 @@ class UpsertUser(BaseUser, metaclass=AllOptional):
 
 
 class FindUserResult(BaseModel):
-    founds: Optional[List[User]]
-    search_options: Optional[SearchOptions]
+    founds: List[User]
+    search_options: SearchOptions
