@@ -39,7 +39,7 @@ class BaseRepository:
 
     async def read_by_email(self, email: EmailStr):
         async with self.session_factory() as session:
-            stmt = select(self.model).where(self.model == email)
+            stmt = select(self.model).where(self.model.email == email)
             result = await session.execute(stmt)
             user = result.scalars().all()
 
