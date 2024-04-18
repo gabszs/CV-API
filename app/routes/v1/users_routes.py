@@ -19,7 +19,6 @@ router = APIRouter(prefix="/user", tags=["user"])
 @router.get("", response_model=FindUserResult)
 async def get_user_list(service: UserServiceDependency, offset: int = 0, limit: int = 100):
     users = await service.get_list(FindBase(offset=offset, limit=limit))
-
     return FindUserResult(
         founds=users, search_options=SearchOptions(offset=offset, limit=limit, total_count=len(users))
     )
@@ -35,7 +34,6 @@ async def create_user(user: BaseUserWithPassword, service: UserServiceDependency
     return await service.add(user)
 
 
-# , current_user: CurrentUserDependency
 @router.put("/{user_id}")
 async def update_user(user_id: UUID, user: UpsertUser, service: UserServiceDependency):
     return await service.patch(id=user_id, schema=user)

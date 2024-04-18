@@ -24,6 +24,10 @@ class User(ModelBaseInfo, BaseUser):
     ...
 
 
+class OptionalUser(User, metaclass=AllOptional):
+    ...
+
+
 class FindUser(FindBase, BaseUser, metaclass=AllOptional):
     ...
 
