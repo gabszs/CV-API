@@ -10,7 +10,8 @@ from app.schemas.user_schema import BaseUserWithPassword
 from app.schemas.user_schema import FindUserResult
 from app.schemas.user_schema import UpsertUser
 from app.schemas.user_schema import User
-# from app.core.dependencies import CurrentUserDependency
+
+from app.core.dependencies import CurrentUserDependency
 
 
 router = APIRouter(prefix="/user", tags=["user"])
@@ -35,13 +36,13 @@ async def create_user(user: BaseUserWithPassword, service: UserServiceDependency
 
 
 @router.put("/{user_id}")
-async def update_user(user_id: UUID, user: UpsertUser, service: UserServiceDependency):
-    return await service.patch(id=user_id, schema=user)
+async def update_user(user_id: UUID, user: UpsertUser, service: UserServiceDependency, current_user: CurrentUserDependency):
+    return await service.patch(id=user_id, schema=user, current_user=current_user)
 
 
 @router.delete("/{user_id}", response_model=Message)
-async def delete_user(user_id: UUID, service: UserServiceDependency):
-    await service.remove_by_id(user_id)
+async def delete_user(user_id: UUID, service: UserServiceDependency, current_user: CurrentUserDependency):
+    await service.remove_by_id(user_id, current_user=current_user)
     return Message(detail="User has been deleted successfully")
 
 

@@ -2,6 +2,8 @@ from uuid import UUID
 
 from app.repository.base_repository import BaseRepository
 from app.schemas.base_schema import FindBase
+from app.models import User as UserModel
+from app.core.exceptions import InvalidCredentials
 
 
 class BaseService:
@@ -17,7 +19,10 @@ class BaseService:
     async def add(self, schema):
         return await self._repository.create(schema)
 
-    async def patch(self, id: UUID, schema):
+    async def patch(self, id: UUID, schema, current_user: UserModel):
+        if id != current_user.id:
+            raise InvalidCredentials(detail="Not enough permissions")
+
         return await self._repository.update(id, schema)
 
     async def patch_attr(self, id: UUID, attr: str, value):
@@ -26,5 +31,7 @@ class BaseService:
     async def put_update(self, id: UUID, schema):
         return await self._repository.whole_update(id, schema)
 
-    async def remove_by_id(self, id: UUID):
+    async def remove_by_id(self, id: UUID, current_user: UserModel):
+        if id != current_user.id:
+            raise InvalidCredentials(detail="Not enough permissions")
         return await self._repository.delete_by_id(id)
