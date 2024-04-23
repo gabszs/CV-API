@@ -19,8 +19,11 @@ class BaseUserWithPassword(BaseUser):
     password: str
 
 
-class User(ModelBaseInfo, BaseUser):
+class User(BaseUser, ModelBaseInfo):
     model_config = ConfigDict(from_attributes=True)
+
+    is_active: bool
+    is_superuser: bool
     ...
 
 
