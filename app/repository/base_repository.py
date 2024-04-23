@@ -81,11 +81,11 @@ class BaseRepository:
         async with self.session_factory() as session:
             result = await session.get(self.model, id)
 
-            if column == getattr(result, column):
-                raise BadRequestError(detail="No changes detected")
-
             if not result:
                 raise NotFoundError(detail=f"id not found: {id}")
+
+            if value == getattr(result, column):
+                raise BadRequestError(detail="No changes detected")
 
             stmt = update(self.model).where(self.model.id == id).values({column: value})
             try:
