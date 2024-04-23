@@ -1,9 +1,9 @@
 from uuid import UUID
 
+from app.core.exceptions import InvalidCredentials
+from app.models import User as UserModel
 from app.repository.base_repository import BaseRepository
 from app.schemas.base_schema import FindBase
-from app.models import User as UserModel
-from app.core.exceptions import InvalidCredentials
 
 
 class BaseService:
