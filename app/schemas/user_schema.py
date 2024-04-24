@@ -42,3 +42,7 @@ class UpsertUser(BaseUser, metaclass=AllOptional):
 class FindUserResult(BaseModel):
     founds: List[User]
     search_options: SearchOptions
+
+
+class UserWithCleanPassword(BaseUserWithPassword):
+    clean_password: str
