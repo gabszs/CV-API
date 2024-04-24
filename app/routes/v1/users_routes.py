@@ -19,7 +19,6 @@ router = APIRouter(prefix="/user", tags=["user"])
 @router.get("/", response_model=FindUserResult)
 async def get_user_list(service: UserServiceDependency, offset: int = 0, limit: int = 100):
     users = await service.get_list(FindBase(offset=offset, limit=limit))
-    print(users)
     return FindUserResult(
         founds=users, search_options=SearchOptions(offset=offset, limit=limit, total_count=len(users))
     )
