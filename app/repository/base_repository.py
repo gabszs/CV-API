@@ -53,6 +53,10 @@ class BaseRepository:
                 await session.commit()
                 await session.refresh(query)
             except IntegrityError as e:
+                if "Key (email)" in str(e.orig):
+                    raise DuplicatedError(detail="Email already registered")
+                if "Key (username)" in str(e.orig):
+                    raise DuplicatedError(detail="Username already registered")
                 raise DuplicatedError(detail=str(e.orig))
             return query
 
