@@ -1,13 +1,16 @@
+from datetime import datetime
 from typing import AsyncGenerator
 from typing import Generator
 
 import pytest
+from httpx import ASGITransport
 from httpx import AsyncClient
 from sqlalchemy import create_engine
 from sqlalchemy import event
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.orm import Session
 from sqlalchemy.orm import SessionTransaction
@@ -16,9 +19,16 @@ from app.core.database import get_session_factory
 from app.core.settings import settings
 from app.main import app
 from app.models import Base
+from tests.factories import batch_users_by_options
+from tests.factories import UserFactory
 
 
 sync_db_url = settings.TEST_DATABASE_URL.replace("+asyncpg", "")
+
+
+@pytest.fixture
+def factory_user() -> UserFactory:
+    return UserFactory()
 
 
 @pytest.fixture
@@ -28,7 +38,7 @@ def anyio_backend() -> str:
 
 @pytest.fixture
 async def client() -> AsyncGenerator:
-    async with AsyncClient(app=app, base_url="https://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="https://test") as client:
         yield client
 
 
@@ -114,4 +124,34 @@ async def session() -> AsyncGenerator:
     await async_engine.dispose()
 
 
-#
+def validate_datetime(data_string):
+    try:
+        datetime.strptime(data_string, "%Y-%m-%dT%H:%M:%S.%fZ")
+        return True
+    except ValueError:
+        try:
+            datetime.strptime(data_string, "%Y-%m-%dT%H:%M:%S")
+            return True
+        except ValueError:
+            return False
+
+
+async def setup_users_data(
+    session: AsyncSession, normal_users: int = 0, admin_users: int = 0, disable_users: int = 0, disable_admins: int = 0
+) -> None:
+    users, clean_users = batch_users_by_options(
+        normal_users=normal_users, admin_users=admin_users, disable_users=disable_users, disable_admins=disable_admins
+    )
+    session.add_all(users)
+    await session.flush()
+    await session.commit()
+    return clean_users
+
+
+async def token(client, session, base_auth_route: str = "/v1/auth", normal_users: int = 1, **kwargs):
+    clean_users = await setup_users_data(session, normal_users=normal_users, **kwargs)
+    clean_user = clean_users[0]
+    response = await client.post(
+        f"{base_auth_route}/sign-in", json={"email__eq": clean_user.email, "password": clean_user.clean_password}
+    )
+    return clean_user, response.json()["access_token"]
