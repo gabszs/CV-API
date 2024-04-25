@@ -26,13 +26,15 @@ class UserFactory(factory.Factory):
     is_superuser = None
 
 
-def create_factory_users(users_qty: int, password: str = "_password", **kwargs) -> Dict[UserFactory, str]:
+def create_factory_users(users_qty: int, **kwargs) -> Dict[UserFactory, str]:
     users_dict: Dict[Dict[str, List[UserFactory]], Dict[str, List[str]]] = {"users": list(), "clean_users": list()}
-    for count in range(users_qty):
-        clean_password = f"{count}{password}"
-        user = UserFactory(password=get_password_hash(clean_password), **kwargs)
+    for _ in range(users_qty):
+        user = UserFactory(**kwargs)
+        clean_password = user.password
+        user.password = get_password_hash(user.password)
+
         clean_user = UserWithCleanPassword(
-            email=user.email, username=user.email, password=user.password, clean_password=clean_password
+            email=user.email, username=user.username, password=user.password, clean_password=clean_password
         )
 
         users_dict["users"].append(user)
