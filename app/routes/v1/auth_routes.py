@@ -16,9 +16,14 @@ async def sign_in(user_info: SignIn, service: AuthServiceDependency):
     return await service.sign_in(user_info)
 
 
-@router.post("/sign-up", response_model=UserSchema)
+@router.post("/sign-up", status_code=201, response_model=UserSchema)
 async def sign_up(user_info: SignUp, service: AuthServiceDependency):
     return await service.sign_up(user_info)
+
+
+@router.post("/refresh_token")
+async def refresh_token(current_user: CurrentUserDependency, service: AuthServiceDependency):
+    return await service.refresh_token(current_user)
 
 
 @router.get("/me", response_model=UserSchema)
