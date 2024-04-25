@@ -45,6 +45,8 @@ class BaseRepository:
 
             return user
 
+
+    #probally a bug will happpen here, correct later due to diferente models
     async def create(self, schema):
         async with self.session_factory() as session:
             query = self.model(**schema.model_dump())
