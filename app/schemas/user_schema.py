@@ -1,4 +1,5 @@
 from typing import List
+from typing import Optional
 
 from pydantic import BaseModel
 from pydantic import ConfigDict
@@ -35,7 +36,11 @@ class FindUser(FindBase, BaseUser, metaclass=AllOptional):
     ...
 
 
-class UpsertUser(BaseUser, metaclass=AllOptional):
+class UpsertUser(BaseModel):
+    email: Optional[EmailStr]
+    username: Optional[str]
+    is_active: Optional[bool]
+    is_superuser: Optional[bool]
     ...
 
 
