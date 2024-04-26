@@ -42,14 +42,15 @@ async def update_user(
     return await service.patch(id=user_id, schema=user, current_user=current_user)
 
 
-# @router.patch("/change_password/{user_id}")
-# async def change_password(user_id: UUID, service: UserServiceDependency, current_user: CurrentUserDependency):
-#     return await service.patch_attr(id=user_id, attr="password")
+@router.patch("/enable_user/{user_id}", response_model=Message)
+async def enabled_user(user_id: UUID, service: UserServiceDependency, current_user: CurrentUserDependency):
+    await service.patch_attr(id=user_id, attr="is_active", value=True, current_user=current_user)
+    return Message(detail="User has been enabled successfully")
 
 
 @router.delete("/disable/{user_id}", response_model=Message)
 async def disable_user(user_id: UUID, service: UserServiceDependency, current_user: CurrentUserDependency):
-    await service.patch_attr(id=user_id, attr="is_active", value=False)
+    await service.patch_attr(id=user_id, attr="is_active", value=False, current_user=current_user)
     return Message(detail="User has been desabled successfully")
 
 
