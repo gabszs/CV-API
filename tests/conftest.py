@@ -148,9 +148,14 @@ async def setup_users_data(
     return clean_users
 
 
-async def token(client, session, base_auth_route: str = "/v1/auth", normal_users: int = 1, **kwargs):
+async def token(
+    client, session, base_auth_route: str = "/v1/auth", normal_users: int = 1, clean_user_index: int = 0, **kwargs
+):
+    if clean_user_index > normal_users or clean_user_index < 0:
+        raise ValueError("The index needs to be lower than normal_users_qty or greater than 0")
+
     clean_users = await setup_users_data(session, normal_users=normal_users, **kwargs)
-    clean_user = clean_users[0]
+    clean_user = clean_users[clean_user_index]
     response = await client.post(
         f"{base_auth_route}/sign-in", json={"email__eq": clean_user.email, "password": clean_user.clean_password}
     )
