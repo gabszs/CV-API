@@ -45,29 +45,29 @@ jobs:
           docker push ${{ env.IMAGE_BUILD_NAME }}
           echo "::set-output name=image::${{env.IMAGE_BUILD_NAME}}"
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Authenticate to Huawei Cloud
-        uses: huaweicloud/auth-action@v1.1.0
-        with:
-          access_key_id: ${{ secrets.ACCESS_KEY }}
-          secret_access_key: ${{ secrets.SECRET_ACCESS_KEY }}
-          region: ${{ env.CLOUD_REGION }}
-          project_id: ${{ env.PROJECT_ID }}
+  # deploy:
+  #   needs: build
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Authenticate to Huawei Cloud
+  #       uses: huaweicloud/auth-action@v1.1.0
+  #       with:
+  #         access_key_id: ${{ secrets.ACCESS_KEY }}
+  #         secret_access_key: ${{ secrets.SECRET_ACCESS_KEY }}
+  #         region: ${{ env.CLOUD_REGION }}
+  #         project_id: ${{ env.PROJECT_ID }}
 
-      - name: Kubectl Tool Installer
-        id: install-kubectl
-        uses: Azure/setup-kubectl@v2.1
+  #     - name: Kubectl Tool Installer
+  #       id: install-kubectl
+  #       uses: Azure/setup-kubectl@v2.1
 
-      - name: Deploy to CCI
-        # uses: huaweicloud/deploy-cci-action@v1.2.0 (Main repository)
-        uses: gabszs/deploy-cci-action@v1.2.1 # since the main action does not support latam reagions, use this version with latam regions included
-        id: deploy-to-cci
-        env:
-          IMAGE_BUILD_NAME: swr.${{env.CLOUD_REGION}}.myhuaweicloud.com/${{env.SWR_ORGANIZATION}}/${{env.IMAGE_NAME}}:${{env.IMAGE_TAG}}
-        with:
-          namespace: ${{ env.NAMESPACE }}
-          deployment: ${{ env.DEPLOYMENT }}
-          image: ${{ env.IMAGE_BUILD_NAME }}
+  #     - name: Deploy to CCI
+  #       # uses: huaweicloud/deploy-cci-action@v1.2.0 (Main repository)
+  #       uses: gabszs/deploy-cci-action@v1.2.1 # since the main action does not support latam reagions, use this version with latam regions included
+  #       id: deploy-to-cci
+  #       env:
+  #         IMAGE_BUILD_NAME: swr.${{env.CLOUD_REGION}}.myhuaweicloud.com/${{env.SWR_ORGANIZATION}}/${{env.IMAGE_NAME}}:${{env.IMAGE_TAG}}
+  #       with:
+  #         namespace: ${{ env.NAMESPACE }}
+  #         deployment: ${{ env.DEPLOYMENT }}
+  #         image: ${{ env.IMAGE_BUILD_NAME }}
