@@ -9,5 +9,5 @@ A API de Geração de Currículos é uma aplicação que oferece endpoints para 
 ## Funcionalidades Principais
 
 - **Criação de Currículo**: Os desenvolvedores podem enviar solicitações para criar currículos com base em informações de entrada, como dados pessoais e habilidades prévias.
-  
+
 - **Geração de Currículo Personalizado**: Com base nas informações fornecidas, a API gera automaticamente um currículo profissional formatado em um formato específico, como JSON, PDF, etc.

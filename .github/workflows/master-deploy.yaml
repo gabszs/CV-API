@@ -1,0 +1,113 @@
+name: Production-Pipeline-SWR-CCI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+env:
+  CLOUD_REGION: sa-brazil-1
+  SWR_ORGANIZATION: devopsbrdev
+  IMAGE_NAME: cv-manager
+  IMAGE_TAG: latest
+  NAMESPACE: cci-workspace-resume-infra
+  DEPLOYMENT: hello-world-deployment
+  PROJECT_ID: 4e3eb0b6e82f41a1bc07bf0127edbf77
+
+  DATABASE_URL: ${{secrets.DATABASE_URL}}
+  TEST_DATABASE_URL: ${{vars.TEST_DATABASE_URL}}
+  SECRET_KEY: ${{secrets.SECRET_KEY}}
+  ALGORITHM: ${{secrets.ALGORITHM}}
+  ACCESS_TOKEN_EXPIRE_MINUTES: ${{secrets.ACCESS_TOKEN_EXPIRE_MINUTES}}
+  POSTGRES_USER: ${{secrets.POSTGRES_USER}}
+  POSTGRES_PASSWORD: ${{secrets.POSTGRES_PASSWORD}}
+  POSTGRES_DB: ${{secrets.POSTGRES_DB}}
+  PAGE: ${{vars.PAGE}}
+  PAGE_SIZE: ${{vars.PAGE_SIZE}}
+  ORDERING: ${{vars.PAGE_SIZE}}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres
+        env:
+          POSTGRES_DB: ${{secrets.POSTGRES_DB}}
+          POSTGRES_PASSWORD: ${{secrets.POSTGRES_PASSWORD}}
+          POSTGRES_USER: ${{secrets.POSTGRES_USER}}
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Cloning the Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.11.1"
+
+      - name: Install Poetry
+        run: pipx install poetry
+
+      - name: Install Dependencies
+        run: poetry install
+
+      - name: Run tests
+        run: poetry run task test
+
+
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Huawei Cloud Software Repository for Container (SWR) Login
+        uses: huaweicloud/swr-login@v2.1.0
+        with:
+          access-key-id: ${{ secrets.ACCESS_KEY }}
+          access-key-secret: ${{ secrets.SECRET_ACCESS_KEY }}
+          region: ${{ env.CLOUD_REGION }}
+
+      - name: Build Docker Image
+        id: build-image
+        env:
+          IMAGE_BUILD_NAME: swr.${{env.CLOUD_REGION}}.myhuaweicloud.com/${{env.SWR_ORGANIZATION}}/${{env.IMAGE_NAME}}:${{env.IMAGE_TAG}}
+        run: docker build -t ${{env.IMAGE_BUILD_NAME}} .
+
+      - name: Push Docker Image
+        env:
+          IMAGE_BUILD_NAME: swr.${{env.CLOUD_REGION}}.myhuaweicloud.com/${{env.SWR_ORGANIZATION}}/${{env.IMAGE_NAME}}:${{env.IMAGE_TAG}}
+        run: |
+          docker push ${{ env.IMAGE_BUILD_NAME }}
+          echo "::set-output name=image::${{env.IMAGE_BUILD_NAME}}"
+
+  # deploy:
+  #   needs: build
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Authenticate to Huawei Cloud
+  #       uses: huaweicloud/auth-action@v1.1.0
+  #       with:
+  #         access_key_id: ${{ secrets.ACCESS_KEY }}
+  #         secret_access_key: ${{ secrets.SECRET_ACCESS_KEY }}
+  #         region: ${{ env.CLOUD_REGION }}
+  #         project_id: ${{ env.PROJECT_ID }}
+
+  #     - name: Kubectl Tool Installer
+  #       id: install-kubectl
+  #       uses: Azure/setup-kubectl@v2.1
+
+  #     - name: Deploy to CCI
+  #       # uses: huaweicloud/deploy-cci-action@v1.2.0 (Main repository)
+  #       uses: gabszs/deploy-cci-action@v1.2.1 # since the main action does not support latam reagions, use this version with latam regions included
+  #       id: deploy-to-cci
+  #       env:
+  #         IMAGE_BUILD_NAME: swr.${{env.CLOUD_REGION}}.myhuaweicloud.com/${{env.SWR_ORGANIZATION}}/${{env.IMAGE_NAME}}:${{env.IMAGE_TAG}}
+  #       with:
+  #         namespace: ${{ env.NAMESPACE }}
+  #         deployment: ${{ env.DEPLOYMENT }}
+  #         image: ${{ env.IMAGE_BUILD_NAME }}
