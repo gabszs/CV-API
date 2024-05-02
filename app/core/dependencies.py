@@ -11,9 +11,11 @@ from app.core.exceptions import AuthError
 from app.core.security import JWTBearer
 from app.core.settings import settings
 from app.models import User
+from app.repository.skill_repository import SkillRepository
 from app.repository.user_repository import UserRepository
 from app.schemas.auth_schema import Payload
 from app.services.auth_service import AuthService
+from app.services.skill_service import SkillService
 from app.services.user_service import UserService
 
 
@@ -39,7 +41,13 @@ async def get_auth_service(session: Session = Depends(get_session_factory)):
     return AuthService(user_repository=user_repository)
 
 
+async def get_skill_service(session: Session = Depends(get_session_factory)):
+    skill_repository = SkillRepository(session_factory=session)
+    return SkillService(skill_repository)
+
+
 SessionDependency = Annotated[Session, Depends(get_db)]
 UserServiceDependency = Annotated[UserService, Depends(get_user_service)]
 CurrentUserDependency = Annotated[User, Depends(get_current_user)]
 AuthServiceDependency = Annotated[AuthService, Depends(get_auth_service)]
+SkillServiceDependency = Annotated[SkillService, Depends(get_skill_service)]
