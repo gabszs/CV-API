@@ -12,7 +12,7 @@ from sqlalchemy.sql import func
 
 
 class Base(MappedAsDataclass, DeclarativeBase):
-    __mapper_args__ = {"eager_defaults": True}
+    # __mapper_args__ = {"eager_defaults": True}
     id: Mapped[UUID] = mapped_column(
         types.Uuid,
         primary_key=True,
