@@ -1,30 +1,35 @@
+from typing import List
 from typing import Optional
+from uuid import UUID
 
 from pydantic import EmailStr
+from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
+from sqlalchemy.orm import relationship
 
 from app.models.base_model import Base
-from sqlalchemy import Table, Column, ForeignKey, Integer, CheckConstraint
-from uuid import UUID
 from app.models.models_enums import SkillLevel
 
-association_table = Table(
-    "user_skill_association",
-    Base.metadata,
-    Column("user_id", UUID, ForeignKey("users.id")),
-    Column("skills_id", Integer, ForeignKey("skills.id")),
-    Column("skill_level", SkillLevel),
-    Column("skill_years_experience", Integer, CheckConstraint("skill_years_experience >= 0 AND skill_years_experience < 70"))
-)
+
+class UserSkillsAssociation(Base):
+    __tablename__ = "user_skills_association"
+
+    users_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), primary_key=True)
+    skill_id: Mapped[int] = mapped_column(ForeignKey("skills.id"), primary_key=True)
+    skill_level: Mapped[SkillLevel]
+    skill_years_experience: Mapped[int]
+    skill: Mapped["Skill"] = relationship(back_populates="users")
+    user: Mapped["User"] = relationship(back_populates="skills")
+
 
 class User(Base):
     __tablename__ = "users"
-    __allow_unmapped__ = True
 
+    password: Mapped[str]
     email: Mapped[str] = mapped_column(unique=True)
     username: Mapped[str] = mapped_column(unique=True)
-    password: Mapped[str]
+    skills: Mapped[List["UserSkillsAssociation"]] = relationship(back_populates="user")
     is_active: Mapped[bool] = mapped_column(default=True, server_default="True")
     is_superuser: Mapped[bool] = mapped_column(default=False, server_default="False")
 
@@ -42,11 +47,11 @@ class User(Base):
         self.is_active = is_active
         self.is_superuser = is_superuser
 
-class Skills(Base):
+
+class Skill(Base):
     __tablename__ = "skills"
-    __allow_unmapped__ = True
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str]
-    category: Mapped[str]
-
+    skill_name: Mapped[str]
+    category: Mapped[Optional[str]]
+    users: Mapped[List["UserSkillsAssociation"]] = relationship(back_populates="skill")
