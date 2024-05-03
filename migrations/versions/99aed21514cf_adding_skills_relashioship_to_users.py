@@ -1,8 +1,8 @@
 """Adding skills relashioship to users models
 
-Revision ID: 07d172f853ab
+Revision ID: 99aed21514cf
 Revises: ee97a709b9a8
-Create Date: 2024-05-02 18:24:18.783582
+Create Date: 2024-05-03 14:30:49.844722
 
 """
 from typing import Sequence
@@ -13,7 +13,7 @@ from alembic import op
 
 
 # revision identifiers, used by Alembic.
-revision: str = "07d172f853ab"
+revision: str = "99aed21514cf"
 down_revision: Union[str, None] = "ee97a709b9a8"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -25,7 +25,56 @@ def upgrade() -> None:
         "skills",
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("skill_name", sa.String(), nullable=False),
-        sa.Column("category", sa.String(), nullable=True),
+        sa.Column(
+            "category",
+            sa.Enum(
+                "GENERAL",
+                "ENGINEERING",
+                "WEB",
+                "MOBILE",
+                "UX_UI",
+                "GAME",
+                "BIG_DATA",
+                "ANALYTICS",
+                "CYBERSECURITY",
+                "ROBOTICS",
+                "EMBEDDED_SYSTEMS",
+                "AUGMENTED_REALITY",
+                "VIRTUAL_REALITY",
+                "BLOCKCHAIN",
+                "AUTOMATION",
+                "DATA_SCIENCE",
+                "SOFTWARE_ARCHITECTURE",
+                "MACHINE_LEARNING",
+                "IOT",
+                "PROGRAMMING",
+                "DEVOPS",
+                "IT",
+                "VETERINARY_MEDICINE",
+                "CLOUD_COMPUTING",
+                "AI",
+                "DB",
+                "SECURITY",
+                "NETWORKING",
+                "COMPUTER_VISION",
+                "IMAGE_PROCESSING",
+                "NATURAL_LANGUAGE_PROCESSING",
+                "FINTECH",
+                "HEALTHCARE_TECHNOLOGY",
+                "BIOINFORMATICS",
+                "SPACE_TECHNOLOGY",
+                "NANOTECHNOLOGY",
+                "RENEWABLE_ENERGY",
+                "AEROSPACE_ENGINEERING",
+                "MATERIALS_SCIENCE",
+                "QUANTUM_COMPUTING",
+                "REAL_ESTATE",
+                "ADVERTISING",
+                "TRAFFIC_MANAGEMENT",
+                name="categoryoptions",
+            ),
+            nullable=False,
+        ),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
         sa.PrimaryKeyConstraint("id"),
