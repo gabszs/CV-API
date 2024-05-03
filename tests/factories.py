@@ -2,9 +2,12 @@ from typing import Dict
 from typing import List
 
 import factory
+from factory import fuzzy
 
 from app.core.security import get_password_hash
+from app.models import Skill
 from app.models import User
+from app.models.models_enums import CategoryOptions
 from app.schemas.user_schema import UserWithCleanPassword
 
 
@@ -20,10 +23,18 @@ class UserFactory(factory.Factory):
         model = User
 
     username = factory.Sequence(lambda x: f"user_{x}")
-    email = factory.lazy_attribute(lambda x: f"{x.username}@test.com")
+    email = factory.LazyAttribute(lambda x: f"{x.username}@test.com")
     password = factory.LazyAttribute(lambda obj: f"{obj.username}_password")
     is_active = None
     is_superuser = None
+
+
+class SkillFactory(factory.Factory):
+    class Meta:
+        model = Skill
+
+    skill_name = factory.Sequence(lambda x: f"skill_{x}")
+    category = fuzzy.FuzzyChoice(CategoryOptions)
 
 
 def create_factory_users(users_qty: int, **kwargs) -> Dict[UserFactory, str]:
