@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import AsyncGenerator
 from typing import Generator
+from typing import List
 
 import pytest
 from httpx import ASGITransport
@@ -19,7 +20,11 @@ from app.core.database import get_session_factory
 from app.core.settings import settings
 from app.main import app
 from app.models import Base
+from app.models import Skill
+from app.schemas.skill_schema import BaseSkill
+from app.schemas.user_schema import UserWithCleanPassword
 from tests.factories import batch_users_by_options
+from tests.factories import SkillFactory
 from tests.factories import UserFactory
 
 
@@ -29,6 +34,11 @@ sync_db_url = settings.TEST_DATABASE_URL.replace("+asyncpg", "")
 @pytest.fixture
 def factory_user() -> UserFactory:
     return UserFactory()
+
+
+@pytest.fixture
+def factory_skill() -> SkillFactory:
+    return SkillFactory()
 
 
 @pytest.fixture
@@ -138,7 +148,7 @@ def validate_datetime(data_string):
 
 async def setup_users_data(
     session: AsyncSession, normal_users: int = 0, admin_users: int = 0, disable_users: int = 0, disable_admins: int = 0
-) -> None:
+) -> List[UserWithCleanPassword]:
     users, clean_users = batch_users_by_options(
         normal_users=normal_users, admin_users=admin_users, disable_users=disable_users, disable_admins=disable_admins
     )
@@ -146,6 +156,17 @@ async def setup_users_data(
     await session.flush()
     await session.commit()
     return clean_users
+
+
+async def setup_skill_data(session: AsyncSession, qty_size: int = 1) -> List[BaseSkill]:
+    skills: List[Skill] = SkillFactory.create_batch(qty_size)
+    clean_skills: List[BaseSkill] = [
+        BaseSkill(skill_name=skill.skill_name, category=skill.category) for skill in skills
+    ]
+    session.add_all(skills)
+    await session.flush()
+    await session.commit()
+    return clean_skills
 
 
 async def token(

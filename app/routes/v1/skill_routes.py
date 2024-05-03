@@ -2,7 +2,8 @@ from fastapi import APIRouter
 
 from app.core.dependencies import SkillServiceDependency
 from app.schemas.base_schema import Message
-from app.schemas.skill_schema import Skill
+from app.schemas.skill_schema import BaseSkill
+from app.schemas.skill_schema import PublicSkill
 
 router = APIRouter(prefix="/skill", tags=["skills"])
 # from app.schemas.base_schema import SearchOptions
@@ -18,10 +19,9 @@ async def get_skill_by_id(skill_id: int):
     pass
 
 
-@router.post("/", status_code=201)
-async def create_skill(skill: Skill, service: SkillServiceDependency):
-    # return skill
-    return await service.add(Skill)
+@router.post("/", status_code=201, response_model=PublicSkill)
+async def create_skill(skill: BaseSkill, service: SkillServiceDependency):
+    return await service.add(skill)
 
 
 @router.put("/{skill_id}")
