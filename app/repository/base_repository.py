@@ -7,6 +7,7 @@ from pydantic import EmailStr
 from sqlalchemy import select
 from sqlalchemy import update
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import joinedload
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import BadRequestError
@@ -17,17 +18,65 @@ from app.schemas.base_schema import FindBase
 
 settings = Settings()
 
+from icecream import ic
+
 
 class BaseRepository:
     def __init__(self, session_factory: Callable[..., AbstractContextManager[Session]], model) -> None:
         self.session_factory = session_factory
         self.model = model
 
-    async def read_by_options(self, schema: FindBase):
+    # async def read_by_options(self, schema: FindBase, eager: bool = False):
+    #     try:
+    #         async with self.session_factory() as session:
+    #             order_query = (
+    #                 getattr(self.model, schema.ordering[1:]).desc()
+    #                 if schema.ordering.startswith("-")
+    #                 else getattr(self.model, schema.ordering).asc()
+    #             )
+    #             stmt = select(self.model)
+    #             if eager:
+    #                 for eager in getattr(self.model, "eagers", []):
+    #                     stmt = stmt.options(joinedload(getattr(self.model, eager)))
+    #             stmt = stmt.order_by(order_query)
+    #             if schema.page_size == "all":
+    #                 stmt.all()
+    #             else:
+    #                 page_size = int(schema.page_size)
+    #                 offset = (schema.page - 1) * page_size
+    #                 ic(schema.page, type(schema.page), schema, page_size, offset, type(offset))
+    #                 stmt = stmt.limit(schema.page_size).offset(offset)
+    #             query = await session.execute(stmt)
+    #             result = query.scalars().all()
+    #             return result
+    #     except AttributeError:
+    #         raise BadRequestError("Invalid ordering field provided")
+    #     except Exception as error:
+    #         raise BadRequestError(error)
+
+    async def read_by_options(
+        self, schema: FindBase, eager: bool = False
+    ):  # Tentar adicionaro eager_argsd e passar o moodel.users como arg
         async with self.session_factory() as session:
-            query = await session.execute(select(self.model).offset(schema.offset).limit(schema.limit))
-            result = query.scalars().all()
+            order_query = (
+                getattr(self.model, schema.ordering[1:]).desc()
+                if schema.ordering.startswith("-")
+                else getattr(self.model, schema.ordering).asc()
+            )
+            stmt = select(self.model)
+            if eager:
+                for eager in getattr(self.model, "eagers", []):
+                    stmt = stmt.options(joinedload(getattr(self.model, eager)))
+            ic(schema, eager)
+            # page_size = int(schema.page_size)
+            stmt = stmt.offset((schema.page - 1) * int(schema.page_size)).limit(schema.page_size)
+            query = await session.execute(stmt.order_by(order_query))
+            if eager:
+                result = query.unique().scalars().all()
+            else:
+                result = query.scalars().all()
             return result
+            ic(result)
 
     async def read_by_id(self, id: UUID):
         async with self.session_factory() as session:
@@ -112,6 +161,6 @@ class BaseRepository:
         async with self.session_factory() as session:
             user = await session.get(self.model, id)
             if not user:
-                raise NotFoundError(detail=f"not found id : {id}")
+                raise NotFoundError(detail=f"not found id: {id}")
             await session.delete(user)
             await session.commit()

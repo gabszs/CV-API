@@ -1,26 +1,33 @@
 from fastapi import APIRouter
+from fastapi import Depends
 
+from app.core.dependencies import CurrentSuperUserDependency
 from app.core.dependencies import SkillServiceDependency
+from app.schemas.base_schema import FindBase
 from app.schemas.base_schema import Message
 from app.schemas.skill_schema import BaseSkill
 from app.schemas.skill_schema import PublicSkill
 
 router = APIRouter(prefix="/skill", tags=["skills"])
-# from app.schemas.base_schema import SearchOptions
 
 
+# @router.get("/", response_model=FindSkillResult)
 @router.get("/")
-async def get_all_skills(offset: int = 0, limit: int = 100):
-    pass
+async def get_all_skills(service: SkillServiceDependency, find_query: FindBase = Depends()):
+    skills = await service.get_list(find_query)
+    print(find_query, type(find_query))
+    # return FindSkillResult(
+    #     founds=skills, search_options=SearchOptions(offset=offset, limit=limit, total_count=len(skills))
+    # )
 
 
-@router.get("/{skill_id}")
-async def get_skill_by_id(skill_id: int):
-    pass
+@router.get("/{skill_id}", response_model=PublicSkill)
+async def get_skill_by_id(skill_id: int, service: SkillServiceDependency):
+    return await service.get_by_id(skill_id)
 
 
 @router.post("/", status_code=201, response_model=PublicSkill)
-async def create_skill(skill: BaseSkill, service: SkillServiceDependency):
+async def create_skill(skill: BaseSkill, service: SkillServiceDependency, current_user: CurrentSuperUserDependency):
     return await service.add(skill)
 
 
@@ -40,5 +47,6 @@ async def change_skill_skill_name(skill_id: int):
 
 
 @router.delete("/{skill_id}", response_model=Message)
-async def delete_skill(skill_id: int):
+async def delete_skill(skill_id: int, service: SkillServiceDependency, current_user: CurrentSuperUserDependency):
+    await service.remove_by_id(id=skill_id)
     return Message(detail="Skill has been deleted successfully")
