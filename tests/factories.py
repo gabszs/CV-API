@@ -1,14 +1,24 @@
+from typing import Any
 from typing import Dict
 from typing import List
 
 import factory
 from factory import fuzzy
+from factory.base import StubObject
 
 from app.core.security import get_password_hash
 from app.models import Skill
 from app.models import User
 from app.models.models_enums import CategoryOptions
 from app.schemas.user_schema import UserWithCleanPassword
+
+
+def convert_dict_from_stub(stub: StubObject) -> Dict[str, Any]:
+    stub_dict = stub.__dict__
+    for key, value in stub_dict.items():
+        if isinstance(value, StubObject):
+            stub_dict[key] = convert_dict_from_stub(value)
+    return stub_dict
 
 
 def factory_object_to_dict(factory_instance):
