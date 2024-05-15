@@ -1,10 +1,13 @@
 from datetime import datetime
 from typing import List
 from typing import Optional
+from typing import Union
 from uuid import UUID
 
 from pydantic import BaseModel
 from pydantic._internal._model_construction import ModelMetaclass
+
+from app.core.settings import settings
 
 
 class Message(BaseModel):
@@ -30,13 +33,12 @@ class ModelBaseInfo(BaseModel):
 
 
 class FindBase(BaseModel):
-    offset: Optional[int]
-    limit: Optional[int]
+    ordering: Optional[str] = settings.ORDERING
+    page: Optional[int] = settings.PAGE
+    page_size: Optional[Union[int, str]] = settings.PAGE_SIZE
 
 
 class SearchOptions(FindBase):
-    offset: Optional[int]
-    limit: Optional[int]
     total_count: Optional[int]
 
 
