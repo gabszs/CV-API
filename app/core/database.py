@@ -146,7 +146,8 @@ class DatabaseSessionManager:
     def init(self, database_url: str = settings.DATABASE_URL):
         self._engine = create_async_engine(database_url)
         self._sessionmaker = async_scoped_session(
-            async_sessionmaker(autocommit=False, bind=self._engine), scopefunc=asyncio.current_task
+            async_sessionmaker(autocommit=False, bind=self._engine, expire_on_commit=False),
+            scopefunc=asyncio.current_task,
         )
 
     def session_factory(self):
