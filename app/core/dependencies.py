@@ -36,6 +36,18 @@ async def get_current_user(token: str = Depends(JWTBearer()), service: UserServi
     return current_user
 
 
+async def get_current_active_user(current_user: User = Depends(get_current_user)) -> User:
+    if not current_user.is_active:
+        raise AuthError("Inactive user")
+    return current_user
+
+
+async def get_current_superuser(current_user: User = Depends(get_current_active_user)) -> User:
+    if not current_user.is_superuser:
+        raise AuthError("Not enough permissions")
+    return current_user
+
+
 async def get_auth_service(session: Session = Depends(get_session_factory)):
     user_repository = UserRepository(session_factory=session)
     return AuthService(user_repository=user_repository)
@@ -43,7 +55,7 @@ async def get_auth_service(session: Session = Depends(get_session_factory)):
 
 async def get_skill_service(session: Session = Depends(get_session_factory)):
     skill_repository = SkillRepository(session_factory=session)
-    return SkillService(skill_repository)
+    return SkillService(skill_repository=skill_repository)
 
 
 SessionDependency = Annotated[Session, Depends(get_db)]
@@ -51,3 +63,5 @@ UserServiceDependency = Annotated[UserService, Depends(get_user_service)]
 CurrentUserDependency = Annotated[User, Depends(get_current_user)]
 AuthServiceDependency = Annotated[AuthService, Depends(get_auth_service)]
 SkillServiceDependency = Annotated[SkillService, Depends(get_skill_service)]
+CurrentActiveUserDependency = Annotated[User, Depends(get_current_active_user)]
+CurrentSuperUserDependency = Annotated[User, Depends(get_current_superuser)]
