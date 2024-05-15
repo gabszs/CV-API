@@ -1,3 +1,5 @@
+from typing import Optional
+
 from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
 from pydantic_settings import SettingsConfigDict
@@ -26,6 +28,10 @@ class Settings(BaseSettings):
     TEST_DATABASE_URL: str
     # TEST_DATABASE_URL: str = "postgresql+asyncpg://app_user:app_password@localhost:5433/app_db"
     OPENAI_API_KEY: str
+
+    PAGE: Optional[int] = 1
+    PAGE_SIZE: Optional[int] = 20
+    ORDERING: Optional[str] = "-id"
 
 
 settings = Settings()
