@@ -17,7 +17,7 @@ async def get_user_by_index(client, index: int):
 
 
 @pytest.mark.anyio
-async def test_get_all_users_should_return_200_OK(session, client):
+async def test_get_all_users_should_return_200_OK_GET(session, client):
     clean_users = await setup_users_data(
         session=session, normal_users=2, admin_users=2, disable_users=2, disable_admins=2
     )
@@ -39,7 +39,7 @@ async def test_get_all_users_should_return_200_OK(session, client):
 
 
 @pytest.mark.anyio
-async def test_get_all_users_with_limit_should_return_200_OK(session, client):
+async def test_get_all_users_with_limit_should_return_200_OK_GET(session, client):
     limit = 5
     clean_users = await setup_users_data(
         session=session, normal_users=2, admin_users=2, disable_users=2, disable_admins=2
@@ -62,7 +62,7 @@ async def test_get_all_users_with_limit_should_return_200_OK(session, client):
 
 
 @pytest.mark.anyio
-async def test_get_all_users_with_offset_should_return_200_OK(session, client):
+async def test_get_all_users_with_offset_should_return_200_OK_GET(session, client):
     offset = 3
     clean_users = await setup_users_data(
         session=session, normal_users=2, admin_users=2, disable_users=2, disable_admins=2
@@ -85,7 +85,7 @@ async def test_get_all_users_with_offset_should_return_200_OK(session, client):
 
 
 @pytest.mark.anyio
-async def test_get_all_users_with_pagination_should_return_200_OK(session, client):
+async def test_get_all_users_with_pagination_should_return_200_OK_GET(session, client):
     offset = 2
     limit = 3
     clean_users = await setup_users_data(
@@ -109,7 +109,7 @@ async def test_get_all_users_with_pagination_should_return_200_OK(session, clien
 
 
 @pytest.mark.anyio
-async def test_get_by_id_should_return_200_OK(session, client):
+async def test_get_skill_by_id_should_return_200_OK_GET(session, client):
     user_index = 0
     clean_users = await setup_users_data(session=session, normal_users=4)
     clean_user = clean_users[user_index]
@@ -129,7 +129,7 @@ async def test_get_by_id_should_return_200_OK(session, client):
 
 
 @pytest.mark.anyio
-async def test_get_by_id_should_return_404_NOT_FOUND(session, client):
+async def test_get_skill_by_id_should_return_404_NOT_FOUND_GET(session, client):
     random_uuid = str(uuid4())
     response = await client.get(f"{base_url}/{random_uuid}")
 
@@ -138,7 +138,7 @@ async def test_get_by_id_should_return_404_NOT_FOUND(session, client):
 
 
 @pytest.mark.anyio
-async def test_create_normal_user_should_return_422_unprocessable_entity(client):
+async def test_create_normal_user_should_return_422_unprocessable_entity_POST(client):
     response = await client.post(
         f"{base_url}/",
     )
@@ -147,7 +147,7 @@ async def test_create_normal_user_should_return_422_unprocessable_entity(client)
 
 
 @pytest.mark.anyio
-async def test_create_normal_user_should_return_201(client, session, factory_user):
+async def test_create_normal_user_should_return_201_POST(client, session, factory_user):
     response = await client.post(
         f"{base_url}/",
         json={"email": factory_user.email, "username": factory_user.username, "password": factory_user.password},
@@ -163,7 +163,7 @@ async def test_create_normal_user_should_return_201(client, session, factory_use
 
 
 @pytest.mark.anyio
-async def test_create_normal_user_should_return_409_email_already_registered(client, session):
+async def test_create_normal_user_should_return_409_email_already_registered_POST(client, session):
     clean_users = await setup_users_data(session, 1)
     clean_user = clean_users[0]
     response = await client.post(
@@ -176,7 +176,7 @@ async def test_create_normal_user_should_return_409_email_already_registered(cli
 
 
 @pytest.mark.anyio
-async def test_create_normal_user_should_return_409_username_already_registered(client, session):
+async def test_create_normal_user_should_return_409_username_already_registered_POST(client, session):
     clean_users = await setup_users_data(session, 1)
     clean_user = clean_users[0]
     response = await client.post(
@@ -189,7 +189,7 @@ async def test_create_normal_user_should_return_409_username_already_registered(
 
 
 @pytest.mark.anyio
-async def test_disable_user_should_return_200_OK(session, client):
+async def test_disable_user_should_return_200_OK_DELETE(session, client):
     clean_user, auth_token = await token(client, session)
     token_header = {"Authorization": f"Bearer {auth_token}"}
     user = await get_user_by_index(client, 0)
@@ -208,7 +208,7 @@ async def test_disable_user_should_return_200_OK(session, client):
 
 
 @pytest.mark.anyio
-async def test_disable_different_user_should_return_403_FORBIDDEN(session, client):
+async def test_disable_different_user_should_return_403_FORBIDDEN_DELETE(session, client):
     _, auth_token = await token(client, session, normal_users=2, clean_user_index=0)
     token_header = {"Authorization": f"Bearer {auth_token}"}
     other_user = await get_user_by_index(client, 1)
@@ -221,7 +221,7 @@ async def test_disable_different_user_should_return_403_FORBIDDEN(session, clien
 
 
 @pytest.mark.anyio
-async def test_enable_user_user_should_return_200_OK(session, client):
+async def test_enable_user_user_should_return_200_OK_PATCH(session, client):
     clean_user, auth_token = await token(client, session, normal_users=0, disable_users=1)
     token_header = {"Authorization": f"Bearer {auth_token}"}
     user = await get_user_by_index(client, 0)
@@ -240,7 +240,7 @@ async def test_enable_user_user_should_return_200_OK(session, client):
 
 
 @pytest.mark.anyio
-async def test_enable_user_different_user_should_return_403_FORBIDDEN(session, client):
+async def test_enable_user_different_user_should_return_403_FORBIDDEN_PATCH(session, client):
     _, auth_token = await token(client, session, normal_users=2, clean_user_index=0)
     token_header = {"Authorization": f"Bearer {auth_token}"}
     other_user = await get_user_by_index(client, 1)
@@ -253,7 +253,7 @@ async def test_enable_user_different_user_should_return_403_FORBIDDEN(session, c
 
 
 @pytest.mark.anyio
-async def test_delete_user_should_return_200_OK(session, client):
+async def test_delete_user_should_return_200_OK_DELETE(session, client):
     clean_user, auth_token = await token(client, session)
     token_header = {"Authorization": f"Bearer {auth_token}"}
     user = await get_user_by_index(client, 0)
@@ -269,7 +269,7 @@ async def test_delete_user_should_return_200_OK(session, client):
 
 
 @pytest.mark.anyio
-async def test_delete_different_user_should_return_403_FORBIDDEN(session, client):
+async def test_delete_different_user_should_return_403_FORBIDDEN_DELETE(session, client):
     _, auth_token = await token(client, session, normal_users=2, clean_user_index=0)
     token_header = {"Authorization": f"Bearer {auth_token}"}
     other_user = await get_user_by_index(client, 1)
@@ -282,7 +282,7 @@ async def test_delete_different_user_should_return_403_FORBIDDEN(session, client
 
 
 @pytest.mark.anyio
-async def test_put_user_should_return_200_OK(session, client, factory_user):
+async def test_put_user_should_return_200_OK_PUT(session, client, factory_user):
     clean_user, auth_token = await token(client, session)
     user = await get_user_by_index(client, index=0)
     token_header = {"Authorization": f"Bearer {auth_token}"}

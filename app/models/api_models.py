@@ -11,7 +11,6 @@ from app.models.models_enums import CategoryOptions
 from app.models.models_enums import SkillLevel
 
 
-
 class UserSkillsAssociation(Base):
     __tablename__ = "user_skills_association"
 

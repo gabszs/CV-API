@@ -27,7 +27,7 @@ mock_token = {
 
 
 @pytest.mark.anyio
-async def test_get_token_should_return_200_OK(client, session):
+async def test_get_token_should_return_200_OK_POST(client, session):
     clean_users = await setup_users_data(session, normal_users=1)
     clean_user = clean_users[0]
 
@@ -51,7 +51,7 @@ async def test_get_token_should_return_200_OK(client, session):
 
 
 @pytest.mark.anyio
-async def test_auth_token_expired_after_time_should_return_403_FORBIDDEN(client, session):
+async def test_auth_token_expired_after_time_should_return_403_FORBIDDEN_POST(client, session):
     overtime_minutes = settings.ACCESS_TOKEN_EXPIRE_MINUTES + 1
     clean_users = await setup_users_data(session, 1)
     clean_user = clean_users[0]
@@ -72,7 +72,7 @@ async def test_auth_token_expired_after_time_should_return_403_FORBIDDEN(client,
 
 
 @pytest.mark.anyio
-async def test_auth_token_inexistent_user_should_return_401_INVALIDCREDENTIALS(client, session):
+async def test_auth_token_inexistent_user_should_return_401_INVALIDCREDENTIALS_POST(client, session):
     response = await client.post(
         f"{base_auth_route}/sign-in", json={"email__eq": "email@test.com", "password": "test_password"}
     )
@@ -82,7 +82,7 @@ async def test_auth_token_inexistent_user_should_return_401_INVALIDCREDENTIALS(c
 
 
 @pytest.mark.anyio
-async def test_auth_token_wrong_user_should_return_401_INVALIDCREDENTIALS(client, session):
+async def test_auth_token_wrong_user_should_return_401_INVALIDCREDENTIALS_POST(client, session):
     clean_users = await setup_users_data(session, normal_users=1)
     clean_user = clean_users[0]
 
@@ -95,7 +95,7 @@ async def test_auth_token_wrong_user_should_return_401_INVALIDCREDENTIALS(client
 
 
 @pytest.mark.anyio
-async def test_auth_get_me_route_without_token_should_return_403_FORBIDDEN(client, session):
+async def test_auth_get_me_route_without_token_should_return_403_FORBIDDEN_GET(client, session):
     response = await client.get(f"{base_auth_route}/me", headers={"Authorization": ""})
 
     assert response.status_code == 403
@@ -103,7 +103,7 @@ async def test_auth_get_me_route_without_token_should_return_403_FORBIDDEN(clien
 
 
 @pytest.mark.anyio
-async def test_auth_get_me_should_return_200_OK(client, session):
+async def test_auth_get_me_should_return_200_OK_GET(client, session):
     clean_user, auth_token = await token(client, session)
     token_header = {"Authorization": f"Bearer {auth_token}"}
     # response = await client.post(f"{base_auth_route}/refresh_token", headers=token_header)
@@ -121,7 +121,7 @@ async def test_auth_get_me_should_return_200_OK(client, session):
 
 
 @pytest.mark.anyio
-async def test_auth_token_expired_after_dont_refresh_should_return_403_FORBIDDEN(client, session):
+async def test_auth_token_expired_after_dont_refresh_should_return_403_FORBIDDEN_POST(client, session):
     overtime_minutes = settings.ACCESS_TOKEN_EXPIRE_MINUTES + 1
     clean_users = await setup_users_data(session, 1)
     clean_user = clean_users[0]
@@ -141,7 +141,7 @@ async def test_auth_token_expired_after_dont_refresh_should_return_403_FORBIDDEN
 
 
 @pytest.mark.anyio
-async def test_refresh_token_should_return_200_OK(client, session):
+async def test_refresh_token_should_return_200_OK_POST(client, session):
     overtime_minutes = settings.ACCESS_TOKEN_EXPIRE_MINUTES - 1
     clean_users = await setup_users_data(session, 1)
     clean_user = clean_users[0]
@@ -173,7 +173,7 @@ async def test_refresh_token_should_return_200_OK(client, session):
 
 
 @pytest.mark.anyio
-async def test_auth_sign_up_should_return_200_OK(client, session, factory_user):
+async def test_auth_sign_up_should_return_200_OK_POST(client, session, factory_user):
     response = await client.post(
         f"{base_auth_route}/sign-up",
         json={"email": factory_user.email, "password": factory_user.password, "username": factory_user.username},
@@ -191,7 +191,7 @@ async def test_auth_sign_up_should_return_200_OK(client, session, factory_user):
 
 
 @pytest.mark.anyio
-async def test_auth_sign_up_should_return_409_username_already_registered(client, session):
+async def test_auth_sign_up_should_return_409_username_already_registered_POST(client, session):
     clean_users = await setup_users_data(session, 1)
     clean_user = clean_users[0]
     response = await client.post(
@@ -204,7 +204,7 @@ async def test_auth_sign_up_should_return_409_username_already_registered(client
 
 
 @pytest.mark.anyio
-async def test_auth_sign_up_should_return_409_email_already_registered(client, session):
+async def test_auth_sign_up_should_return_409_email_already_registered_POST(client, session):
     clean_users = await setup_users_data(session, 1)
     clean_user = clean_users[0]
     response = await client.post(
