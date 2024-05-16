@@ -4,8 +4,8 @@ from pydantic import BaseModel
 from pydantic import ConfigDict
 
 from app.models.models_enums import CategoryOptions
+from app.schemas.base_schema import FindModelResult
 from app.schemas.base_schema import ModelBaseInfo
-from app.schemas.base_schema import SearchOptions
 
 
 class BaseSkill(BaseModel):
@@ -19,9 +19,8 @@ class PublicSkill(ModelBaseInfo, BaseSkill):
     id: int
 
 
-class FindSkillResult(BaseModel):
+class FindSkillResult(FindModelResult):
     founds: List[PublicSkill]
-    search_options: SearchOptions
 
 
 # ps = PublicSkill(skill_name=Test)

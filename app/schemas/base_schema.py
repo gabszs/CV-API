@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 from typing import List
 from typing import Optional
 from typing import Union
@@ -52,6 +53,11 @@ class FindDateRange(BaseModel):
     created_at__lte: str
     created_at__gt: str
     created_at__gte: str
+
+
+class FindModelResult(BaseModel):
+    founds: List[Any]
+    search_options: SearchOptions
 
 
 class Blank(BaseModel):

@@ -7,8 +7,8 @@ from pydantic import EmailStr
 
 from app.schemas.base_schema import AllOptional
 from app.schemas.base_schema import FindBase
+from app.schemas.base_schema import FindModelResult
 from app.schemas.base_schema import ModelBaseInfo
-from app.schemas.base_schema import SearchOptions
 
 
 class BaseUser(BaseModel):
@@ -44,9 +44,8 @@ class UpsertUser(BaseModel):
     ...
 
 
-class FindUserResult(BaseModel):
+class FindUserResult(FindModelResult):
     founds: List[User]
-    search_options: SearchOptions
 
 
 class UserWithCleanPassword(BaseUserWithPassword):
