@@ -5,9 +5,10 @@ from sqlalchemy.orm import Session
 
 from app.models import User
 from app.repository.base_repository import BaseRepository
+from app.schemas.user_schema import User as UserSchema
 
 
 class UserRepository(BaseRepository):
     def __init__(self, session_factory: Callable[..., AbstractContextManager[Session]]):
         self.session_factory = session_factory
-        super().__init__(session_factory, User)
+        super().__init__(session_factory, User, UserSchema)

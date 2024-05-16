@@ -5,12 +5,13 @@ from sqlalchemy.orm import Session
 
 from app.models import Skill
 from app.repository.base_repository import BaseRepository
+from app.schemas.skill_schema import PublicSkill
 
 
 class SkillRepository(BaseRepository):
     def __init__(self, session_factory: Callable[..., AbstractContextManager[Session]]):
         self.session_factory = session_factory
-        super().__init__(session_factory, Skill)
+        super().__init__(session_factory, Skill, PublicSkill)
 
     # async def read_by_options(self, schema: FindBase):
     #     async with self.session_factory() as session:

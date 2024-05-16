@@ -3,6 +3,7 @@ from typing import Any
 from typing import Callable
 from uuid import UUID
 
+from icecream import ic
 from pydantic import EmailStr
 from sqlalchemy import select
 from sqlalchemy import update
@@ -16,47 +17,51 @@ from app.core.exceptions import NotFoundError
 from app.core.settings import Settings
 from app.schemas.base_schema import FindBase
 
-settings = Settings()
 
-from icecream import ic
+settings = Settings()
 
 
 class BaseRepository:
-    def __init__(self, session_factory: Callable[..., AbstractContextManager[Session]], model) -> None:
+    def __init__(self, session_factory: Callable[..., AbstractContextManager[Session]], model, public_schema) -> None:
         self.session_factory = session_factory
         self.model = model
+        self.public_schema = public_schema
 
-    # async def read_by_options(self, schema: FindBase, eager: bool = False):
-    #     try:
-    #         async with self.session_factory() as session:
-    #             order_query = (
-    #                 getattr(self.model, schema.ordering[1:]).desc()
-    #                 if schema.ordering.startswith("-")
-    #                 else getattr(self.model, schema.ordering).asc()
-    #             )
-    #             stmt = select(self.model)
-    #             if eager:
-    #                 for eager in getattr(self.model, "eagers", []):
-    #                     stmt = stmt.options(joinedload(getattr(self.model, eager)))
-    #             stmt = stmt.order_by(order_query)
-    #             if schema.page_size == "all":
-    #                 stmt.all()
-    #             else:
-    #                 page_size = int(schema.page_size)
-    #                 offset = (schema.page - 1) * page_size
-    #                 ic(schema.page, type(schema.page), schema, page_size, offset, type(offset))
-    #                 stmt = stmt.limit(schema.page_size).offset(offset)
-    #             query = await session.execute(stmt)
+    # async def read_by_options(
+    #     self, schema: FindBase, eager: bool = False
+    # ):  # Tentar adicionaro eager_argsd e passar o moodel.users como arg
+    #     async with self.session_factory() as session:
+    #         order_query = (
+    #             getattr(self.model, schema.ordering[1:]).desc()
+    #             if schema.ordering.startswith("-")
+    #             else getattr(self.model, schema.ordering).asc()
+    #         )
+    #         stmt = select(self.model)
+    #         if eager:
+    #             for eager in getattr(self.model, "eagers", []):
+    #                 stmt = stmt.options(joinedload(getattr(self.model, eager)))
+    #         ic(schema, eager)
+    #         offset = (schema.page - 1) * int(schema.page_size)
+    #         limit = int(schema.page_size)
+    #         ic(offset, limit, type(limit))
+    #         # page_size = int(schema.page_size)
+    #         stmt = stmt.offset(offset).limit(limit)
+    #         # query = await session.execute(stmt.order_by(order_query))
+    #         query = await session.execute(stmt.order_by(self.model.created_at.desc()))
+    #         stmt = stmt.order_by(self.model.created_at.desc())
+    #         query.scalars().all()
+    #         if eager:
+    #             result = query.unique().scalars().all()
+    #         else:
     #             result = query.scalars().all()
-    #             return result
-    #     except AttributeError:
-    #         raise BadRequestError("Invalid ordering field provided")
-    #     except Exception as error:
-    #         raise BadRequestError(error)
+    #         ic(str(stmt))
+    #         return result
+    #         print
+    #         ic(result)
+    async def read_by_options(self, schema: FindBase, eager: bool = False, unique: bool = False):
+        from app.schemas.skill_schema import SearchOptions
+        from app.schemas.base_schema import FindModelResult
 
-    async def read_by_options(
-        self, schema: FindBase, eager: bool = False
-    ):  # Tentar adicionaro eager_argsd e passar o moodel.users como arg
         async with self.session_factory() as session:
             order_query = (
                 getattr(self.model, schema.ordering[1:]).desc()
@@ -65,18 +70,41 @@ class BaseRepository:
             )
             stmt = select(self.model)
             if eager:
-                for eager in getattr(self.model, "eagers", []):
-                    stmt = stmt.options(joinedload(getattr(self.model, eager)))
-            ic(schema, eager)
-            # page_size = int(schema.page_size)
-            stmt = stmt.offset((schema.page - 1) * int(schema.page_size)).limit(schema.page_size)
-            query = await session.execute(stmt.order_by(order_query))
-            if eager:
+                for eager_relation in getattr(self.model, "eagers", []):
+                    stmt = stmt.options(joinedload(getattr(self.model, eager_relation)))
+
+            offset = (schema.page - 1) * int(schema.page_size)
+            limit = int(schema.page_size)
+            stmt = stmt.order_by(order_query).offset(offset).limit(limit)
+
+            compiled_stmt = str(stmt.compile(compile_kwargs={"literal_binds": True}))
+            ic(compiled_stmt)
+
+            query = await session.execute(stmt)
+            if False:
+                ic()
                 result = query.unique().scalars().all()
             else:
                 result = query.scalars().all()
-            return result
-            ic(result)
+            for skill in result:
+                print(f"Skill: {skill.id}, Name: {skill.skill_name}, Category: {skill.category}")
+            ic(query, type(query))
+            # ic(type(result), list(result))
+            return FindModelResult(
+                founds=[self.public_schema(model) for model in result],
+                search_options=SearchOptions(
+                    ordering=schema.ordering, page=schema.page, page_size=schema.page_size, total_count=len(result)
+                ),
+            )
+            return {
+                "founds": query,
+                "search_options": {
+                    "page": schema.page,
+                    "page_size": schema.page_size,
+                    "ordering": schema.ordering,
+                    "total_count": len(result),
+                },
+            }
 
     async def read_by_id(self, id: UUID):
         async with self.session_factory() as session:
