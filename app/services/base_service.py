@@ -20,7 +20,7 @@ class BaseService:
                 raise AuthError(detail="Not enough permissions")
 
     async def get_list(self, schema: FindBase):
-        return await self._repository.read_by_options(schema, eager=True)
+        return await self._repository.read_by_options(schema)
 
     async def get_by_id(self, id: Union[UUID, int]):
         return await self._repository.read_by_id(id)
