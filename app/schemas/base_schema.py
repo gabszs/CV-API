@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Annotated
 from typing import Any
 from typing import List
 from typing import Optional
@@ -6,8 +7,12 @@ from typing import Union
 from uuid import UUID
 
 from pydantic import BaseModel
+from pydantic import Field
+from pydantic import field_validator
+from pydantic import ValidationInfo
 from pydantic._internal._model_construction import ModelMetaclass
 
+from app.core.exceptions import ValidationError
 from app.core.settings import settings
 
 
@@ -35,8 +40,21 @@ class ModelBaseInfo(BaseModel):
 
 class FindBase(BaseModel):
     ordering: Optional[str] = settings.ORDERING
-    page: Optional[int] = settings.PAGE
+    page: Annotated[int, Field(gt=0)] = settings.PAGE
     page_size: Optional[Union[int, str]] = settings.PAGE_SIZE
+
+    @field_validator("page_size")
+    @classmethod
+    def page_size_field_validator(cls, value: Union[str, int], info: ValidationInfo):
+        try:
+            input = int(value)
+            if input < 0:
+                raise ValidationError("Page size must be a positive integer")
+            return input
+        except Exception as _:
+            if value != "all":
+                raise ValidationError("Page size must be 'all' or a positive integer")
+            return value
 
 
 class SearchOptions(FindBase):
