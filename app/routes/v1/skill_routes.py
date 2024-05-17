@@ -6,19 +6,15 @@ from app.core.dependencies import SkillServiceDependency
 from app.schemas.base_schema import FindBase
 from app.schemas.base_schema import Message
 from app.schemas.skill_schema import BaseSkill
+from app.schemas.skill_schema import FindSkillResult
 from app.schemas.skill_schema import PublicSkill
 
 router = APIRouter(prefix="/skill", tags=["skills"])
 
 
-# @router.get("/", response_model=FindSkillResult)
-@router.get("/")
+@router.get("/", response_model=FindSkillResult)
 async def get_all_skills(service: SkillServiceDependency, find_query: FindBase = Depends()):
-    skills = await service.get_list(find_query)
-    print(find_query, type(find_query))
-    # return FindSkillResult(
-    #     founds=skills, search_options=SearchOptions(offset=offset, limit=limit, total_count=len(skills))
-    # )
+    return await service.get_list(find_query)
 
 
 @router.get("/{skill_id}", response_model=PublicSkill)
