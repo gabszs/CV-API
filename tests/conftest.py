@@ -32,6 +32,11 @@ sync_db_url = settings.TEST_DATABASE_URL.replace("+asyncpg", "")
 
 
 @pytest.fixture
+def default_search_options() -> str:
+    return {"ordering": "created_at", "page": 1, "page_size": "all"}
+
+
+@pytest.fixture
 def factory_user() -> UserFactory:
     return UserFactory()
 
@@ -181,3 +186,8 @@ async def token(
         f"{base_auth_route}/sign-in", json={"email__eq": clean_user.email, "password": clean_user.clean_password}
     )
     return clean_user, response.json()["access_token"]
+
+
+async def get_admin_token_header(client, session) -> str:
+    _, auth_token = await token(client, session, normal_users=0, admin_users=1)
+    return {"Authorization": f"Bearer {auth_token}"}
