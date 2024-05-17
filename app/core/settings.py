@@ -31,7 +31,7 @@ class Settings(BaseSettings):
 
     PAGE: Optional[int] = 1
     PAGE_SIZE: Optional[int] = 20
-    ORDERING: Optional[str] = "-id"
+    ORDERING: Optional[str] = "-created_at"
 
 
 settings = Settings()
