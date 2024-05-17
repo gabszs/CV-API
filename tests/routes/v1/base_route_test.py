@@ -5,6 +5,7 @@ from typing import Union
 from uuid import UUID
 
 import pytest
+from deprecated import deprecated
 from factory import Factory
 from pydantic import BaseModel
 
@@ -12,6 +13,9 @@ from tests.conftest import validate_datetime
 from tests.factories import convert_dict_from_stub
 
 
+@deprecated(
+    "This class is depracted, we created for tests puporse but pytest does not works well with inhiritance with __init__"
+)
 class BaseTest:
     def __init__(
         self,
@@ -115,7 +119,6 @@ class BaseTest:
     async def test_create_should_return_201_POST(self, client, session):
         factory_model = self.model_factory()
         input_schema = self.get_input_model(factory_model)
-        print(f"teste input_schema: {input_schema}")
 
         response = await client.post(f"{self.base_url}/", json={**input_schema})
         response_json = response.json()
