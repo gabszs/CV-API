@@ -1,3 +1,4 @@
+from urllib.parse import urlencode
 from uuid import UUID
 from uuid import uuid4
 
@@ -12,22 +13,22 @@ base_url = "/v1/user"
 
 
 async def get_user_by_index(client, index: int):
-    response = await client.get(f"{base_url}/?offset=0&limit=100")
+    response = await client.get(f"{base_url}/?ordering=created_at")
     return response.json()["founds"][index]
 
 
 @pytest.mark.anyio
-async def test_get_all_users_should_return_200_OK_GET(session, client):
+async def test_get_all_users_should_return_200_OK_GET(session, client, default_search_options):
     clean_users = await setup_users_data(
         session=session, normal_users=2, admin_users=2, disable_users=2, disable_admins=2
     )
-    response = await client.get(f"{base_url}/?offset=0&limit=100")
+    response = await client.get(f"{base_url}/?{urlencode(default_search_options)}")
     response_json = response.json()
     users_json = response_json["founds"]
 
     assert response.status_code == 200
     assert len(users_json) == 8
-    assert response_json["search_options"] == {"limit": 100, "offset": 0, "total_count": 8}
+    assert response_json["search_options"] == default_search_options | {"total_count": 8}
     assert all(
         [
             user.username == users_json[count].get("username") and user.email == users_json[count].get("email")
@@ -39,12 +40,12 @@ async def test_get_all_users_should_return_200_OK_GET(session, client):
 
 
 @pytest.mark.anyio
-async def test_get_all_users_with_limit_should_return_200_OK_GET(session, client):
-    limit = 5
+async def test_get_all_users_with_page_size_should_return_200_OK_GET(session, client):
+    query_find_parameters = {"ordering": "created_at", "page": 1, "page_size": 5}
     clean_users = await setup_users_data(
         session=session, normal_users=2, admin_users=2, disable_users=2, disable_admins=2
     )
-    response = await client.get(f"{base_url}/?offset=0&limit={limit}")
+    response = await client.get(f"{base_url}/?{urlencode(query_find_parameters)}")
     response_json = response.json()
 
     assert response.status_code == 200
@@ -52,46 +53,22 @@ async def test_get_all_users_with_limit_should_return_200_OK_GET(session, client
         [
             user.username == response_json["founds"][count].get("username")
             and user.email == response_json["founds"][count].get("email")
-            for count, user in enumerate(clean_users[:limit])
+            for count, user in enumerate(clean_users[: query_find_parameters["page_size"]])
         ]
     )
     assert len(response_json["founds"]) == 5
-    assert response_json["search_options"] == {"limit": limit, "offset": 0, "total_count": limit}
-    assert all([validate_datetime(user["created_at"]) for user in response_json["founds"]])
-    assert all([validate_datetime(user["updated_at"]) for user in response_json["founds"]])
-
-
-@pytest.mark.anyio
-async def test_get_all_users_with_offset_should_return_200_OK_GET(session, client):
-    offset = 3
-    clean_users = await setup_users_data(
-        session=session, normal_users=2, admin_users=2, disable_users=2, disable_admins=2
-    )
-    response = await client.get(f"{base_url}/?offset={offset}&limit=100")
-    response_json = response.json()
-
-    assert response.status_code == 200
-    assert all(
-        [
-            user.username == response_json["founds"][count].get("username")
-            and user.email == response_json["founds"][count].get("email")
-            for count, user in enumerate(clean_users[offset:])
-        ]
-    )
-    assert len(response_json["founds"]) == 5
-    assert response_json["search_options"] == {"limit": 100, "offset": offset, "total_count": 5}
+    assert response_json["search_options"] == query_find_parameters | {"total_count": 5}
     assert all([validate_datetime(user["created_at"]) for user in response_json["founds"]])
     assert all([validate_datetime(user["updated_at"]) for user in response_json["founds"]])
 
 
 @pytest.mark.anyio
 async def test_get_all_users_with_pagination_should_return_200_OK_GET(session, client):
-    offset = 2
-    limit = 3
+    query_find_parameters = {"ordering": "created_at", "page": 2, "page_size": 4}
     clean_users = await setup_users_data(
         session=session, normal_users=2, admin_users=2, disable_users=2, disable_admins=2
     )
-    response = await client.get(f"{base_url}/?offset={offset}&limit={limit}")
+    response = await client.get(f"{base_url}/?{urlencode(query_find_parameters)}")
     response_json = response.json()
 
     assert response.status_code == 200
@@ -99,17 +76,19 @@ async def test_get_all_users_with_pagination_should_return_200_OK_GET(session, c
         [
             user.username == response_json["founds"][count].get("username")
             and user.email == response_json["founds"][count].get("email")
-            for count, user in enumerate(clean_users[offset : limit + offset])
+            for count, user in enumerate(clean_users[4:])
         ]
     )
-    assert len(response_json["founds"]) == limit
-    assert response_json["search_options"] == {"limit": limit, "offset": offset, "total_count": limit}
+    assert len(response_json["founds"]) == query_find_parameters["page_size"]
+    assert response_json["search_options"] == query_find_parameters | {
+        "total_count": query_find_parameters["page_size"]
+    }
     assert all([validate_datetime(user["created_at"]) for user in response_json["founds"]])
     assert all([validate_datetime(user["updated_at"]) for user in response_json["founds"]])
 
 
 @pytest.mark.anyio
-async def test_get_skill_by_id_should_return_200_OK_GET(session, client):
+async def test_get_user_by_id_should_return_200_OK_GET(session, client):
     user_index = 0
     clean_users = await setup_users_data(session=session, normal_users=4)
     clean_user = clean_users[user_index]
@@ -129,7 +108,7 @@ async def test_get_skill_by_id_should_return_200_OK_GET(session, client):
 
 
 @pytest.mark.anyio
-async def test_get_skill_by_id_should_return_404_NOT_FOUND_GET(session, client):
+async def test_get_user_by_id_should_return_404_NOT_FOUND_GET(session, client):
     random_uuid = str(uuid4())
     response = await client.get(f"{base_url}/{random_uuid}")
 
@@ -247,7 +226,6 @@ async def test_enable_user_different_user_should_return_403_FORBIDDEN_PATCH(sess
 
     response = await client.patch(f"{base_url}/enable_user/{other_user['id']}", headers=token_header)
     response_json = response.json()
-
     assert response.status_code == 403
     assert response_json == {"detail": "Not enough permissions"}
 
