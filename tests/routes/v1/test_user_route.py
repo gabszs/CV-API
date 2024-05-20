@@ -5,6 +5,7 @@ from uuid import uuid4
 import pytest
 from icecream import ic
 
+from tests.conftest import get_admin_token_header
 from tests.conftest import setup_users_data
 from tests.conftest import token
 from tests.conftest import validate_datetime
@@ -261,9 +262,8 @@ async def test_delete_different_user_should_return_403_FORBIDDEN_DELETE(session,
 
 @pytest.mark.anyio
 async def test_put_user_should_return_200_OK_PUT(session, client, factory_user):
-    clean_user, auth_token = await token(client, session)
+    token_header = await get_admin_token_header(client, session)
     user = await get_user_by_index(client, index=0)
-    token_header = {"Authorization": f"Bearer {auth_token}"}
     different_user = {
         "email": factory_user.email,
         "username": factory_user.username,
@@ -281,7 +281,7 @@ async def test_put_user_should_return_200_OK_PUT(session, client, factory_user):
 
 
 @pytest.mark.anyio
-async def test_put_user_should_return_403_FORBIDDEN(session, client, factory_user):
+async def test_put_user_should_return_403_FORBIDDEN_PUT(session, client, factory_user):
     _, auth_token = await token(client, session, normal_users=2)
     user = await get_user_by_index(client, index=1)
     token_header = {"Authorization": f"Bearer {auth_token}"}

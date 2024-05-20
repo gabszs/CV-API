@@ -191,3 +191,8 @@ async def token(
 async def get_admin_token_header(client, session) -> str:
     _, auth_token = await token(client, session, normal_users=0, admin_users=1)
     return {"Authorization": f"Bearer {auth_token}"}
+
+
+async def get_normal_token_header(client, session) -> str:
+    _, auth_token = await token(client, session, normal_users=1)
+    return {"Authorization": f"Bearer {auth_token}"}
