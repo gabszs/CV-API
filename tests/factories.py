@@ -9,7 +9,9 @@ from factory.base import StubObject
 from app.core.security import get_password_hash
 from app.models import Skill
 from app.models import User
+from app.models import UserSkillsAssociation
 from app.models.models_enums import CategoryOptions
+from app.models.models_enums import SkillLevel
 from app.schemas.user_schema import UserWithCleanPassword
 
 
@@ -45,6 +47,18 @@ class SkillFactory(factory.Factory):
 
     skill_name = factory.Sequence(lambda x: f"skill_{x}")
     category = fuzzy.FuzzyChoice(CategoryOptions)
+
+
+class UserSkillFactory(factory.Factory):
+    class Meta:
+        model = UserSkillsAssociation
+
+    users_id = None
+    skill_id = None
+    skill_level = fuzzy.FuzzyChoice(SkillLevel)
+    skill_years_experience = factory.Faker("pyint", min_value=0, max_value=1000)
+    skill = None
+    user = None
 
 
 def create_factory_users(users_qty: int, **kwargs) -> Dict[UserFactory, str]:

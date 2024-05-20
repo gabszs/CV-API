@@ -13,7 +13,7 @@ from tests.conftest import validate_datetime
 base_url = "/v1/user"
 
 
-async def get_user_by_index(client, index: int):
+async def get_user_by_index(client, index: int = 0):
     response = await client.get(f"{base_url}/?ordering=created_at")
     return response.json()["founds"][index]
 

@@ -12,7 +12,7 @@ from tests.conftest import validate_datetime
 base_url = "/v1/skill"
 
 
-async def get_skill_by_index(client, index: int):
+async def get_skill_by_index(client, index: int = 0):
     response = await client.get(f"{base_url}/?ordering=created_at")
     return response.json()["founds"][index]
 
@@ -296,7 +296,9 @@ async def test_patch_same_skill_category_should_return_400_BAD_REQUEST_PATCH(ses
     token_header = await get_admin_token_header(client, session)
     await setup_skill_data(session)
     skill = await get_skill_by_index(client, index=0)
-    response = await client.patch(f"{base_url}/change_category/{skill['id']}/category/{skill['category']}", headers=token_header)
+    response = await client.patch(
+        f"{base_url}/change_category/{skill['id']}/category/{skill['category']}", headers=token_header
+    )
     response_json = response.json()
 
     assert response.status_code == 400
@@ -352,7 +354,9 @@ async def test_patch_skill_skill_name_should_return_404_NOT_FOUND_PATCH(session,
     token_header = await get_admin_token_header(client, session)
     await setup_skill_data(session)
     id = 33
-    response = await client.patch(f"{base_url}/change_skill_name/{id}/skill_name/{factory_skill.skill_name}", headers=token_header)
+    response = await client.patch(
+        f"{base_url}/change_skill_name/{id}/skill_name/{factory_skill.skill_name}", headers=token_header
+    )
     response_json = response.json()
 
     assert response.status_code == 404

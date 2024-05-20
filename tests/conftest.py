@@ -26,6 +26,7 @@ from app.schemas.user_schema import UserWithCleanPassword
 from tests.factories import batch_users_by_options
 from tests.factories import SkillFactory
 from tests.factories import UserFactory
+from tests.factories import UserSkillFactory
 
 
 sync_db_url = settings.TEST_DATABASE_URL.replace("+asyncpg", "")
@@ -39,6 +40,11 @@ def default_search_options() -> str:
 @pytest.fixture
 def factory_user() -> UserFactory:
     return UserFactory()
+
+
+@pytest.fixture
+def factory_user_skill() -> UserSkillFactory:
+    return UserSkillFactory()
 
 
 @pytest.fixture
