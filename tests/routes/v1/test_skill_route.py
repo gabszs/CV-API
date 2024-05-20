@@ -281,7 +281,7 @@ async def test_patch_skill_category_should_return_200_OK_PUT(session, client, fa
     await setup_skill_data(session)
     skill = await get_skill_by_index(client, index=0)
     response = await client.patch(
-        f"{base_url}/change_category/{skill['id']}/{factory_skill.category.value}", headers=token_header
+        f"{base_url}/change_category/{skill['id']}/category/{factory_skill.category.value}", headers=token_header
     )
     response_json = response.json()
 
@@ -296,7 +296,7 @@ async def test_patch_same_skill_category_should_return_400_BAD_REQUEST_PATCH(ses
     token_header = await get_admin_token_header(client, session)
     await setup_skill_data(session)
     skill = await get_skill_by_index(client, index=0)
-    response = await client.patch(f"{base_url}/change_category/{skill['id']}/{skill['category']}", headers=token_header)
+    response = await client.patch(f"{base_url}/change_category/{skill['id']}/category/{skill['category']}", headers=token_header)
     response_json = response.json()
 
     assert response.status_code == 400
@@ -309,7 +309,7 @@ async def test_patch_skill_category_should_return_404_NOT_FOUND_PATCH(session, c
     await setup_skill_data(session)
     id = 33
     response = await client.patch(
-        f"{base_url}/change_category/{id}/{factory_skill.category.value}", headers=token_header
+        f"{base_url}/change_category/{id}/category/{factory_skill.category.value}", headers=token_header
     )
     response_json = response.json()
 
@@ -323,7 +323,7 @@ async def test_patch_skill_skill_name_should_return_200_OK_PUT(session, client, 
     await setup_skill_data(session)
     skill = await get_skill_by_index(client, index=0)
     response = await client.patch(
-        f"{base_url}/change_skill_name/{skill['id']}/{factory_skill.skill_name}", headers=token_header
+        f"{base_url}/change_skill_name/{skill['id']}/skill_name/{factory_skill.skill_name}", headers=token_header
     )
     response_json = response.json()
 
@@ -339,7 +339,7 @@ async def test_patch_same_skill_skill_name_should_return_400_BAD_REQUEST_PATCH(s
     await setup_skill_data(session)
     skill = await get_skill_by_index(client, index=0)
     response = await client.patch(
-        f"{base_url}/change_skill_name/{skill['id']}/{skill['skill_name']}", headers=token_header
+        f"{base_url}/change_skill_name/{skill['id']}/skill_name/{skill['skill_name']}", headers=token_header
     )
     response_json = response.json()
 
@@ -352,7 +352,7 @@ async def test_patch_skill_skill_name_should_return_404_NOT_FOUND_PATCH(session,
     token_header = await get_admin_token_header(client, session)
     await setup_skill_data(session)
     id = 33
-    response = await client.patch(f"{base_url}/change_skill_name/{id}/{factory_skill.skill_name}", headers=token_header)
+    response = await client.patch(f"{base_url}/change_skill_name/{id}/skill_name/{factory_skill.skill_name}", headers=token_header)
     response_json = response.json()
 
     assert response.status_code == 404
