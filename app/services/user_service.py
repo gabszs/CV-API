@@ -22,3 +22,11 @@ class UserService(BaseService):
     async def remove_by_id(self, id: Union[UUID, int], current_user: UserModel):
         await self.validate_permission(id=id, current_user=current_user)
         return await self._repository.delete_by_id(id)
+
+    async def patch(self, id: Union[UUID, int], schema, current_user: UserModel):
+        await self.validate_permission(id=id, current_user=current_user)
+        return await self._repository.update(id, schema)
+
+    async def patch_attr(self, id: Union[UUID, int], attr: str, value, current_user: UserModel):
+        await self.validate_permission(id=id, current_user=current_user)
+        return await self._repository.update_attr(id, attr, value)
