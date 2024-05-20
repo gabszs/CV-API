@@ -3,9 +3,10 @@ from uuid import UUID
 from fastapi import APIRouter
 from fastapi import Depends
 
+from app.core.dependencies import CurrentSuperUserDependency
 from app.core.dependencies import CurrentUserDependency
+from app.core.dependencies import FindBase
 from app.core.dependencies import UserServiceDependency
-from app.schemas.base_schema import FindBase
 from app.schemas.base_schema import Message
 from app.schemas.user_schema import BaseUserWithPassword
 from app.schemas.user_schema import FindUserResult
@@ -16,7 +17,7 @@ router = APIRouter(prefix="/user", tags=["user"])
 
 
 @router.get("/", response_model=FindUserResult)
-async def get_user_list(service: UserServiceDependency, find_query: FindBase = Depends(FindBase)):
+async def get_user_list(service: UserServiceDependency, find_query: FindBase = Depends()):
     return await service.get_list(find_query)
 
 
@@ -33,7 +34,7 @@ async def create_user(user: BaseUserWithPassword, service: UserServiceDependency
 ### adicionar validacao para quano o a request tiver parametros iguais ao do current_user
 @router.put("/{user_id}", response_model=User)
 async def update_user(
-    user_id: UUID, user: UpsertUser, service: UserServiceDependency, current_user: CurrentUserDependency
+    user_id: UUID, user: UpsertUser, service: UserServiceDependency, current_user: CurrentSuperUserDependency
 ):
     return await service.patch(id=user_id, schema=user, current_user=current_user)
 
