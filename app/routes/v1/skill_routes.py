@@ -34,14 +34,14 @@ async def update_skill(
     return await service.patch(id=skill_id, schema=skill)
 
 
-@router.patch("/change_category/{skill_id}/{category}", response_model=PublicSkill)
+@router.patch("/change_category/{skill_id}/category/{category}", response_model=PublicSkill)
 async def change_skill_category(
     skill_id: int, category: CategoryOptions, service: SkillServiceDependency, current_user: CurrentSuperUserDependency
 ):
     return await service.patch_attr(id=skill_id, attr="category", value=category)
 
 
-@router.patch("/change_skill_name/{skill_id}/{skill_name}", response_model=PublicSkill)
+@router.patch("/change_skill_name/{skill_id}/skill_name/{skill_name}", response_model=PublicSkill)
 async def change_skill_skill_name(
     skill_id: int, skill_name: str, service: SkillServiceDependency, current_user: CurrentSuperUserDependency
 ):
