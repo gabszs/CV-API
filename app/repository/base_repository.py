@@ -73,18 +73,18 @@ class BaseRepository:
     # probally a bug will happpen here, correct later due to diferente models
     async def create(self, schema):
         async with self.session_factory() as session:
-            query = self.model(**schema.model_dump())
+            model = self.model(**schema.model_dump())
             try:
-                session.add(query)
+                session.add(model)
                 await session.commit()
-                await session.refresh(query)
+                await session.refresh(model)
             except IntegrityError as e:
                 if "Key (email)" in str(e.orig):
                     raise DuplicatedError(detail="Email already registered")
                 if "Key (username)" in str(e.orig):
                     raise DuplicatedError(detail="Username already registered")
                 raise DuplicatedError(detail=f"{self.model.__tablename__.capitalize()[:-1]} already registered")
-            return query
+            return model
 
     async def update(self, id: UUID, schema):
         async with self.session_factory() as session:

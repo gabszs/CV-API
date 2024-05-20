@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import List
 from uuid import UUID
 
@@ -12,6 +13,16 @@ class BaseUserSkillsAssociation(BaseModel):
     skill_id: int
     skill_level: SkillLevel
     skill_years_experience: int
+
+
+class InsertUserSkillAssociation(BaseUserSkillsAssociation):
+    ...
+
+
+class PublicUserSkillAssociation(BaseUserSkillsAssociation):
+    id: UUID
+    created_at: datetime
+    updated_at: datetime
 
 
 class FindUserSkillResults(FindModelResult):
