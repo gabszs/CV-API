@@ -28,12 +28,10 @@ class BaseService:
     async def add(self, schema):
         return await self._repository.create(schema)
 
-    async def patch(self, id: Union[UUID, int], schema, current_user: UserModel):
-        await self.validate_permission(id=id, current_user=current_user)
+    async def patch(self, id: Union[UUID, int], schema):
         return await self._repository.update(id, schema)
 
-    async def patch_attr(self, id: Union[UUID, int], attr: str, value, current_user: UserModel):
-        await self.validate_permission(id=id, current_user=current_user)
+    async def patch_attr(self, id: Union[UUID, int], attr: str, value):
         return await self._repository.update_attr(id, attr, value)
 
     async def put_update(self, id: Union[UUID, int], schema):
