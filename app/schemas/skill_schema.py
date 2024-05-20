@@ -1,4 +1,5 @@
 from typing import List
+from typing import Optional
 
 from pydantic import BaseModel
 from pydantic import ConfigDict
@@ -19,9 +20,10 @@ class PublicSkill(ModelBaseInfo, BaseSkill):
     id: int
 
 
+class UpdateSkill(BaseSkill):
+    skill_name: Optional[str]
+    category: Optional[CategoryOptions]
+
+
 class FindSkillResult(FindModelResult):
     founds: List[PublicSkill]
-
-
-# ps = PublicSkill(skill_name=Test)
-# FindSkillResult()
