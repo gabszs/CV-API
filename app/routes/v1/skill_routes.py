@@ -27,6 +27,7 @@ async def get_skill_by_id(skill_id: int, service: SkillServiceDependency):
 async def create_skill(skill: BaseSkill, service: SkillServiceDependency, current_user: CurrentSuperUserDependency):
     return await service.add(skill)
 
+
 @router.put("/{skill_id}", response_model=PublicSkill)
 async def update_skill(
     skill_id: int, skill: UpdateSkill, service: SkillServiceDependency, current_user: CurrentSuperUserDependency
