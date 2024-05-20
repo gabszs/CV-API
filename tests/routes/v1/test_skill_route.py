@@ -148,7 +148,7 @@ async def test_delete_skill_should_return_200_OK_DELETE(session, client):
 
     response = await client.delete(f"{base_url}/{skill['id']}", headers=token_header)
     response_json = response.json()
-    get_skills_response = await client.get(f"{base_url}/?offset=0&limit=100")
+    get_skills_response = await client.get(f"{base_url}/")
 
     assert response.status_code == 200
     assert response_json == {"detail": "Skill has been deleted successfully"}
@@ -165,7 +165,7 @@ async def test_delete_skill_should_return_403_FORBIDDEN_DELETE(session, client):
 
     response = await client.delete(f"{base_url}/{skill['id']}", headers=token_header)
     response_json = response.json()
-    get_skills_response = await client.get(f"{base_url}/?offset=0&limit=100")
+    get_skills_response = await client.get(f"{base_url}/")
 
     assert response.status_code == 403
     assert response_json == {"detail": "Not enough permissions"}
