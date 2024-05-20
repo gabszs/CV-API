@@ -37,6 +37,9 @@ class BaseRepository:
                     stmt = stmt.options(joinedload(getattr(self.model, eager_relation)))
             if schema.page_size != "all":
                 stmt = stmt.offset((schema.page - 1) * (schema.page_size)).limit(int(schema.page_size))
+
+            # compiled_stmt = str(stmt.compile(compile_kwargs={"literal_binds": True})) -> exibe a query
+
             query = await session.execute(stmt)
             if unique:
                 result = query.unique()
@@ -88,11 +91,11 @@ class BaseRepository:
             schema = schema.model_dump()
             result = await session.get(self.model, id)
 
-            if schema == {attr: getattr(result, attr) for attr in schema.keys()}:
-                raise BadRequestError(detail="No changes detected")
-
             if not result:
                 raise NotFoundError(detail=f"id not found: {id}")
+
+            if schema == {attr: getattr(result, attr) for attr in schema.keys()}:
+                raise BadRequestError(detail="No changes detected")
 
             stmt = update(self.model).where(self.model.id == id).values(**schema)
             try:
@@ -107,10 +110,8 @@ class BaseRepository:
     async def update_attr(self, id: UUID, column: str, value: Any):
         async with self.session_factory() as session:
             result = await session.get(self.model, id)
-
             if not result:
                 raise NotFoundError(detail=f"id not found: {id}")
-
             if value == getattr(result, column):
                 raise BadRequestError(detail="No changes detected")
 
