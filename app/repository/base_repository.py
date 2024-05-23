@@ -24,13 +24,21 @@ class BaseRepository:
         self.session_factory = session_factory
         self.model = model
 
+    async def get_order_by(self, schema):
+        return (
+            getattr(self.model, schema.ordering[1:]).desc()
+            if schema.ordering.startswith("-")
+            else getattr(self.model, schema.ordering).asc()
+        )
+
     async def read_by_options(self, schema: FindBase, eager: bool = False, unique: bool = False):
         async with self.session_factory() as session:
-            order_query = (
-                getattr(self.model, schema.ordering[1:]).desc()
-                if schema.ordering.startswith("-")
-                else getattr(self.model, schema.ordering).asc()
-            )
+            # order_query = (
+            #     getattr(self.model, schema.ordering[1:]).desc()
+            #     if schema.ordering.startswith("-")
+            #     else getattr(self.model, schema.ordering).asc()
+            # )
+            order_query = await self.get_order_by(schema)
             stmt = select(self.model).order_by(order_query)
             if eager:
                 for eager_relation in getattr(self.model, "eagers", []):
@@ -62,10 +70,12 @@ class BaseRepository:
                 raise NotFoundError(detail=f"id not found: {id}")
             return result
 
-    async def read_by_email(self, email: EmailStr):
+    async def read_by_email(self, email: EmailStr, unique: bool = False):
         async with self.session_factory() as session:
             stmt = select(self.model).where(self.model.email == email)
             result = await session.execute(stmt)
+            if unique:
+                result = result.unique()
             user = result.scalars().all()
 
             return user
