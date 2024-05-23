@@ -22,7 +22,7 @@ class AuthService(BaseService):
         super().__init__(user_repository)
 
     async def sign_in(self, sign_in_info: SignIn):
-        user: List[User] = await self.user_repository.read_by_email(email=sign_in_info.email__eq)
+        user: List[User] = await self.user_repository.read_by_email(email=sign_in_info.email__eq, unique=True)
         if len(user) < 1:
             raise InvalidCredentials(detail="Incorrect email or user not exist")
         found_user = user[0]
