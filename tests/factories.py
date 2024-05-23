@@ -56,7 +56,7 @@ class UserSkillFactory(factory.Factory):
     users_id = None
     skill_id = None
     skill_level = fuzzy.FuzzyChoice(SkillLevel)
-    skill_years_experience = factory.Faker("pyint", min_value=0, max_value=1000)
+    skill_years_experience = factory.Faker("pyint", min_value=0, max_value=70)
     skill = None
     user = None
 

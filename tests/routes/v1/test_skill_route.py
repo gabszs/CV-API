@@ -82,6 +82,7 @@ async def test_get_all_skills_should_return_200_OK_GET(session, client, default_
     assert response.status_code == 200
     assert len(response_founds) == 8
     assert response_json["search_options"] == default_search_options | {"total_count": 8}
+    ic(response_founds, clean_skills)
     assert all(
         [
             skill.skill_name == response_founds[count]["skill_name"]
