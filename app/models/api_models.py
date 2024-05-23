@@ -18,8 +18,8 @@ class UserSkillsAssociation(Base):
     skill_id: Mapped[int] = mapped_column(ForeignKey("skills.id"), primary_key=True)
     skill_level: Mapped[SkillLevel]
     skill_years_experience: Mapped[int]
-    skill: Mapped["Skill"] = relationship(back_populates="users")
-    user: Mapped["User"] = relationship(back_populates="skills")
+    skill: Mapped["Skill"] = relationship(back_populates="users", lazy="joined")
+    user: Mapped["User"] = relationship(back_populates="skills", lazy="joined")
 
 
 class User(Base):
@@ -28,7 +28,7 @@ class User(Base):
     password: Mapped[str]
     email: Mapped[str] = mapped_column(unique=True)
     username: Mapped[str] = mapped_column(unique=True)
-    skills: Mapped[List["UserSkillsAssociation"]] = relationship(back_populates="user", init=False)
+    skills: Mapped[List["UserSkillsAssociation"]] = relationship(back_populates="user", init=False, lazy="joined")
     is_active: Mapped[bool] = mapped_column(default=True, server_default="True")
     is_superuser: Mapped[bool] = mapped_column(default=False, server_default="False")
 
@@ -39,4 +39,4 @@ class Skill(Base):
     id: Mapped[int] = mapped_column(primary_key=True, init=False)
     skill_name: Mapped[str] = mapped_column(unique=True)
     category: Mapped[CategoryOptions]
-    users: Mapped[List["UserSkillsAssociation"]] = relationship(back_populates="skill", init=False)
+    users: Mapped[List["UserSkillsAssociation"]] = relationship(back_populates="skill", init=False, lazy="joined")
