@@ -10,13 +10,16 @@ from app.schemas.base_schema import ModelBaseInfo
 
 
 class BaseSkill(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     skill_name: str
     category: CategoryOptions
 
 
-class PublicSkill(ModelBaseInfo, BaseSkill):
-    model_config = ConfigDict(from_attributes=True)
+class BaseSkillWithId(BaseSkill):
+    id: int
 
+
+class PublicSkill(ModelBaseInfo, BaseSkill):
     id: int
 
 

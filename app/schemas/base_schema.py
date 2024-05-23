@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import Enum
 from typing import Annotated
 from typing import Any
 from typing import List
@@ -14,6 +15,11 @@ from pydantic._internal._model_construction import ModelMetaclass
 
 from app.core.exceptions import ValidationError
 from app.core.settings import settings
+
+
+class AttrOrderingOptions(str, Enum):
+    desc = "desc"
+    _desc = "-desc"
 
 
 class Message(BaseModel):
@@ -58,6 +64,14 @@ class FindBase(BaseModel):
 
 
 class SearchOptions(FindBase):
+    total_count: Optional[int]
+
+
+class AttrFindBase(FindBase):
+    ordering: Optional[AttrOrderingOptions]
+
+
+class AttrSearchOptions(AttrFindBase):
     total_count: Optional[int]
 
 
