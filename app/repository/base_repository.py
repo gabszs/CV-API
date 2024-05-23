@@ -33,11 +33,6 @@ class BaseRepository:
 
     async def read_by_options(self, schema: FindBase, eager: bool = False, unique: bool = False):
         async with self.session_factory() as session:
-            # order_query = (
-            #     getattr(self.model, schema.ordering[1:]).desc()
-            #     if schema.ordering.startswith("-")
-            #     else getattr(self.model, schema.ordering).asc()
-            # )
             order_query = await self.get_order_by(schema)
             stmt = select(self.model).order_by(order_query)
             if eager:
