@@ -14,22 +14,23 @@ base_url = "/v1/user"
 
 
 async def get_user_by_index(client, index: int = 0):
-    response = await client.get(f"{base_url}/?ordering=created_at")
+    response = await client.get(f"{base_url}/?ordering=username")
     return response.json()["founds"][index]
 
 
 @pytest.mark.anyio
-async def test_get_all_users_should_return_200_OK_GET(session, client, default_search_options):
+async def test_get_all_users_should_return_200_OK_GET(session, client, default_uuid_search_options):
     clean_users = await setup_users_data(
         session=session, normal_users=2, admin_users=2, disable_users=2, disable_admins=2
     )
-    response = await client.get(f"{base_url}/?{urlencode(default_search_options)}")
+    response = await client.get(f"{base_url}/?{urlencode(default_uuid_search_options)}")
     response_json = response.json()
     users_json = response_json["founds"]
 
     assert response.status_code == 200
     assert len(users_json) == 8
-    assert response_json["search_options"] == default_search_options | {"total_count": 8}
+    assert response_json["search_options"] == default_uuid_search_options | {"total_count": 8}
+
     assert all(
         [
             user.username == users_json[count].get("username") and user.email == users_json[count].get("email")
@@ -42,13 +43,14 @@ async def test_get_all_users_should_return_200_OK_GET(session, client, default_s
 
 @pytest.mark.anyio
 async def test_get_all_users_with_page_size_should_return_200_OK_GET(session, client):
-    query_find_parameters = {"ordering": "created_at", "page": 1, "page_size": 5}
+    query_find_parameters = {"ordering": "username", "page": 1, "page_size": 5}
     clean_users = await setup_users_data(
         session=session, normal_users=2, admin_users=2, disable_users=2, disable_admins=2
     )
     response = await client.get(f"{base_url}/?{urlencode(query_find_parameters)}")
     response_json = response.json()
 
+    print("\n")
     assert response.status_code == 200
     assert all(
         [
@@ -65,7 +67,7 @@ async def test_get_all_users_with_page_size_should_return_200_OK_GET(session, cl
 
 @pytest.mark.anyio
 async def test_get_all_users_with_pagination_should_return_200_OK_GET(session, client):
-    query_find_parameters = {"ordering": "created_at", "page": 2, "page_size": 4}
+    query_find_parameters = {"ordering": "username", "page": 2, "page_size": 4}
     clean_users = await setup_users_data(
         session=session, normal_users=2, admin_users=2, disable_users=2, disable_admins=2
     )
