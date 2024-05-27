@@ -13,7 +13,7 @@ base_url = "/v1/skill"
 
 
 async def get_skill_by_index(client, index: int = 0):
-    response = await client.get(f"{base_url}/?ordering=created_at")
+    response = await client.get(f"{base_url}/?ordering=id")
     return response.json()["founds"][index]
 
 
@@ -58,6 +58,29 @@ async def test_create_normal_skill_should_return_409_email_already_registered_PO
 
 
 @pytest.mark.anyio
+async def test_get_all_skills_should_return_200_OK_GET(session, client, default_search_options):
+    clean_skills = await setup_skill_data(session=session, qty_size=8)
+
+    response = await client.get(f"{base_url}/?{urlencode(default_search_options)}")
+    response_json = response.json()
+    response_founds = response_json["founds"]
+
+    assert response.status_code == 200
+    assert len(response_founds) == 8
+    assert response_json["search_options"] == default_search_options | {"total_count": 8}
+    assert all(
+        [
+            skill.skill_name == response_founds[count]["skill_name"]
+            and skill.category == response_founds[count]["category"]
+            for count, skill in enumerate(clean_skills)
+        ]
+    )
+
+    assert all([validate_datetime(skill["created_at"]) for skill in response_founds])
+    assert all([validate_datetime(skill["updated_at"]) for skill in response_founds])
+
+
+@pytest.mark.anyio
 async def test_create_skill_should_return_409_email_already_registered_POST(client, session):
     token_header = await get_admin_token_header(client, session)
     clean_skills = await setup_skill_data(session)
@@ -73,31 +96,8 @@ async def test_create_skill_should_return_409_email_already_registered_POST(clie
 
 
 @pytest.mark.anyio
-async def test_get_all_skills_should_return_200_OK_GET(session, client, default_search_options):
-    clean_skills = await setup_skill_data(session=session, qty_size=8)
-    response = await client.get(f"{base_url}/?{urlencode(default_search_options)}")
-    response_json = response.json()
-    response_founds = response_json["founds"]
-
-    assert response.status_code == 200
-    assert len(response_founds) == 8
-    assert response_json["search_options"] == default_search_options | {"total_count": 8}
-    ic(response_founds, clean_skills)
-    assert all(
-        [
-            skill.skill_name == response_founds[count]["skill_name"]
-            and skill.category == response_founds[count]["category"]
-            for count, skill in enumerate(clean_skills)
-        ]
-    )
-
-    assert all([validate_datetime(skill["created_at"]) for skill in response_founds])
-    assert all([validate_datetime(skill["updated_at"]) for skill in response_founds])
-
-
-@pytest.mark.anyio
 async def test_get_all_skills_with_page_size_should_return_200_OK_GET(session, client):
-    query_find_parameters = {"ordering": "created_at", "page": 1, "page_size": 5}
+    query_find_parameters = {"ordering": "id", "page": 1, "page_size": 5}
     clean_skills = await setup_skill_data(session, 5)
     response = await client.get(f"{base_url}/?{urlencode(query_find_parameters)}")
     response_json = response.json()
@@ -119,7 +119,7 @@ async def test_get_all_skills_with_page_size_should_return_200_OK_GET(session, c
 
 @pytest.mark.anyio
 async def test_get_all_skills_with_pagination_should_return_200_OK_GET(session, client):
-    query_find_parameters = {"ordering": "created_at", "page": 2, "page_size": 4}
+    query_find_parameters = {"ordering": "id", "page": 2, "page_size": 4}
     clean_skills = await setup_skill_data(session=session, qty_size=8)
     response = await client.get(f"{base_url}/?{urlencode(query_find_parameters)}")
     response_json = response.json()
@@ -219,12 +219,6 @@ async def test_put_skill_should_return_200_OK_PUT(session, client, factory_skill
     assert all([response_json[key] == value for key, value in different_skill.items()])
 
 
-# if schema == {attr: getattr(result, attr) for attr in schema.keys()}:
-#     raise BadRequestError(detail="No changes detected")
-# if not result:
-#     raise NotFoundError(detail=f"id not found: {id}")
-
-
 @pytest.mark.anyio
 async def test_put_other_id_skill_should_return_404_NOT_FOUND_PUT(session, client, factory_skill):
     token_header = await get_admin_token_header(client, session)
@@ -282,7 +276,7 @@ async def test_patch_skill_category_should_return_200_OK_PUT(session, client, fa
     await setup_skill_data(session)
     skill = await get_skill_by_index(client, index=0)
     response = await client.patch(
-        f"{base_url}/change_category/{skill['id']}/category/{factory_skill.category.value}", headers=token_header
+        f"{base_url}/{skill['id']}/category/{factory_skill.category.value}", headers=token_header
     )
     response_json = response.json()
 
@@ -297,9 +291,7 @@ async def test_patch_same_skill_category_should_return_400_BAD_REQUEST_PATCH(ses
     token_header = await get_admin_token_header(client, session)
     await setup_skill_data(session)
     skill = await get_skill_by_index(client, index=0)
-    response = await client.patch(
-        f"{base_url}/change_category/{skill['id']}/category/{skill['category']}", headers=token_header
-    )
+    response = await client.patch(f"{base_url}/{skill['id']}/category/{skill['category']}", headers=token_header)
     response_json = response.json()
 
     assert response.status_code == 400
@@ -311,9 +303,7 @@ async def test_patch_skill_category_should_return_404_NOT_FOUND_PATCH(session, c
     token_header = await get_admin_token_header(client, session)
     await setup_skill_data(session)
     id = 33
-    response = await client.patch(
-        f"{base_url}/change_category/{id}/category/{factory_skill.category.value}", headers=token_header
-    )
+    response = await client.patch(f"{base_url}/{id}/category/{factory_skill.category.value}", headers=token_header)
     response_json = response.json()
 
     assert response.status_code == 404
@@ -326,7 +316,7 @@ async def test_patch_skill_skill_name_should_return_200_OK_PUT(session, client, 
     await setup_skill_data(session)
     skill = await get_skill_by_index(client, index=0)
     response = await client.patch(
-        f"{base_url}/change_skill_name/{skill['id']}/skill_name/{factory_skill.skill_name}", headers=token_header
+        f"{base_url}/{skill['id']}/skill_name/{factory_skill.skill_name}", headers=token_header
     )
     response_json = response.json()
 
@@ -341,9 +331,7 @@ async def test_patch_same_skill_skill_name_should_return_400_BAD_REQUEST_PATCH(s
     token_header = await get_admin_token_header(client, session)
     await setup_skill_data(session)
     skill = await get_skill_by_index(client, index=0)
-    response = await client.patch(
-        f"{base_url}/change_skill_name/{skill['id']}/skill_name/{skill['skill_name']}", headers=token_header
-    )
+    response = await client.patch(f"{base_url}/{skill['id']}/skill_name/{skill['skill_name']}", headers=token_header)
     response_json = response.json()
 
     assert response.status_code == 400
@@ -355,9 +343,7 @@ async def test_patch_skill_skill_name_should_return_404_NOT_FOUND_PATCH(session,
     token_header = await get_admin_token_header(client, session)
     await setup_skill_data(session)
     id = 33
-    response = await client.patch(
-        f"{base_url}/change_skill_name/{id}/skill_name/{factory_skill.skill_name}", headers=token_header
-    )
+    response = await client.patch(f"{base_url}/{id}/skill_name/{factory_skill.skill_name}", headers=token_header)
     response_json = response.json()
 
     assert response.status_code == 404
