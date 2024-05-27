@@ -34,7 +34,12 @@ sync_db_url = settings.TEST_DATABASE_URL.replace("+asyncpg", "")
 
 @pytest.fixture
 def default_search_options() -> str:
-    return {"ordering": "created_at", "page": 1, "page_size": "all"}
+    return {"ordering": "id", "page": 1, "page_size": "all"}
+
+
+@pytest.fixture
+def default_uuid_search_options() -> str:
+    return {"ordering": "username", "page": 1, "page_size": "all"}
 
 
 @pytest.fixture
@@ -172,7 +177,7 @@ async def setup_users_data(
 async def setup_skill_data(session: AsyncSession, qty_size: int = 1) -> List[BaseSkill]:
     skills: List[Skill] = SkillFactory.create_batch(qty_size)
     clean_skills: List[BaseSkill] = [
-        BaseSkill(skill_name=skill.skill_name, category=skill.category) for skill in skills
+        BaseSkill(skill_name=skill.skill_name, category=skill.category.value) for skill in skills
     ]
     session.add_all(skills)
     await session.flush()
