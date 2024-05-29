@@ -6,7 +6,6 @@ from app.schemas.auth_schema import SignIn
 from app.schemas.auth_schema import SignInResponse
 from app.schemas.auth_schema import SignUp
 from app.schemas.user_schema import User as UserSchema
-# from app.schemas.base_schema import Message
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 

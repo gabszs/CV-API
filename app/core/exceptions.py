@@ -4,7 +4,6 @@ from typing import Optional
 
 from fastapi import HTTPException
 from fastapi import status
-# from typing_extensions import Annotated, Doc
 
 
 class BadRequestError(HTTPException):
