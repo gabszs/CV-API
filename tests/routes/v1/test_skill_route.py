@@ -3,27 +3,19 @@ from urllib.parse import urlencode
 import pytest
 from icecream import ic
 
-from tests.conftest import get_admin_token_header
-from tests.conftest import get_normal_token_header
+from tests.conftest import base_skill_url
 from tests.conftest import setup_skill_data
-from tests.conftest import token
 from tests.conftest import validate_datetime
 
-base_url = "/v1/skill"
-
-
-async def get_skill_by_index(client, index: int = 0):
-    response = await client.get(f"{base_url}/?ordering=id")
-    return response.json()["founds"][index]
+base_url = base_skill_url
 
 
 @pytest.mark.anyio
-async def test_create_normal_skills_should_return_201_POST(client, session, factory_skill):
-    token_header = await get_admin_token_header(client, session)
+async def test_create_normal_skills_should_return_201_POST(client, session, factory_skill, admin_user_token):
     response = await client.post(
         f"{base_url}/",
         json={"skill_name": factory_skill.skill_name, "category": factory_skill.category},
-        headers=token_header,
+        headers=admin_user_token,
     )
     response_json = response.json()
 
@@ -35,22 +27,20 @@ async def test_create_normal_skills_should_return_201_POST(client, session, fact
 
 
 @pytest.mark.anyio
-async def test_create_normal_skill_should_return_422_unprocessable_entity_POST(client, session):
-    token_header = await get_admin_token_header(client, session)
-    response = await client.post(f"{base_url}/", headers=token_header)
+async def test_create_normal_skill_should_return_422_unprocessable_entity_POST(client, session, admin_user_token):
+    response = await client.post(f"{base_url}/", headers=admin_user_token)
 
     assert response.status_code == 422
 
 
 @pytest.mark.anyio
-async def test_create_normal_skill_should_return_409_email_already_registered_POST(client, session):
-    token_header = await get_admin_token_header(client, session)
-    clean_skills = await setup_skill_data(session, 1)
-    clean_skill = clean_skills[0]
+async def test_create_normal_skill_should_return_409_email_already_registered_POST(
+    client, session, admin_user_token, skill
+):
     response = await client.post(
         f"{base_url}/",
-        json={"skill_name": clean_skill.skill_name, "category": clean_skill.category},
-        headers=token_header,
+        json={"skill_name": skill["skill_name"], "category": skill["category"]},
+        headers=admin_user_token,
     )
 
     assert response.status_code == 409
@@ -81,14 +71,11 @@ async def test_get_all_skills_should_return_200_OK_GET(session, client, default_
 
 
 @pytest.mark.anyio
-async def test_create_skill_should_return_409_email_already_registered_POST(client, session):
-    token_header = await get_admin_token_header(client, session)
-    clean_skills = await setup_skill_data(session)
-    clean_skill = clean_skills[0]
+async def test_create_skill_should_return_409_email_already_registered_POST(client, session, admin_user_token, skill):
     response = await client.post(
         f"{base_url}/",
-        json={"skill_name": clean_skill.skill_name, "category": clean_skill.category},
-        headers=token_header,
+        json={"skill_name": skill["skill_name"], "category": skill["category"]},
+        headers=admin_user_token,
     )
 
     assert response.status_code == 409
@@ -142,12 +129,8 @@ async def test_get_all_skills_with_pagination_should_return_200_OK_GET(session, 
 
 
 @pytest.mark.anyio
-async def test_delete_skill_should_return_200_OK_DELETE(session, client):
-    token_header = await get_admin_token_header(client, session)
-    _ = await setup_skill_data(session=session, qty_size=1)
-    skill = await get_skill_by_index(client, 0)
-
-    response = await client.delete(f"{base_url}/{skill['id']}", headers=token_header)
+async def test_delete_skill_should_return_200_OK_DELETE(session, client, admin_user_token, skill):
+    response = await client.delete(f"{base_url}/{skill['id']}", headers=admin_user_token)
     response_json = response.json()
     get_skills_response = await client.get(f"{base_url}/")
 
@@ -158,13 +141,8 @@ async def test_delete_skill_should_return_200_OK_DELETE(session, client):
 
 
 @pytest.mark.anyio
-async def test_delete_skill_should_return_403_FORBIDDEN_DELETE(session, client):
-    _, auth_token = await token(client, session, normal_users=1)
-    token_header = {"Authorization": f"Bearer {auth_token}"}
-    _ = await setup_skill_data(session=session, qty_size=1)
-    skill = await get_skill_by_index(client, 0)
-
-    response = await client.delete(f"{base_url}/{skill['id']}", headers=token_header)
+async def test_delete_skill_should_return_403_FORBIDDEN_DELETE(session, client, normal_user_token, skill):
+    response = await client.delete(f"{base_url}/{skill['id']}", headers=normal_user_token)
     response_json = response.json()
     get_skills_response = await client.get(f"{base_url}/")
 
@@ -175,18 +153,13 @@ async def test_delete_skill_should_return_403_FORBIDDEN_DELETE(session, client):
 
 
 @pytest.mark.anyio
-async def test_get_skill_by_id_should_return_200_OK_GET(session, client):
-    skill_index = 0
-    clean_skills = await setup_skill_data(session=session)
-    clean_skill = clean_skills[skill_index]
-    skill = await get_skill_by_index(client, skill_index)
-
+async def test_get_skill_by_id_should_return_200_OK_GET(session, client, skill):
     response = await client.get(f"{base_url}/{skill['id']}")
     response_json = response.json()
 
     assert response.status_code == 200
-    assert response_json["skill_name"] == clean_skill.skill_name
-    assert response_json["category"] == clean_skill.category
+    assert response_json["skill_name"] == skill["skill_name"]
+    assert response_json["category"] == skill["category"]
     assert validate_datetime(response_json["created_at"])
     assert validate_datetime(response_json["updated_at"])
 
@@ -201,16 +174,13 @@ async def test_get_by_id_should_return_404_NOT_FOUND_GET(session, client):
 
 
 @pytest.mark.anyio
-async def test_put_skill_should_return_200_OK_PUT(session, client, factory_skill):
-    token_header = await get_admin_token_header(client, session)
-    await setup_skill_data(session)
-    skill = await get_skill_by_index(client, index=0)
+async def test_put_skill_should_return_200_OK_PUT(session, client, factory_skill, skill, admin_user_token):
     different_skill = {
         "skill_name": factory_skill.skill_name,
         "category": factory_skill.category,
     }
 
-    response = await client.put(f"{base_url}/{skill['id']}", headers=token_header, json=different_skill)
+    response = await client.put(f"{base_url}/{skill['id']}", headers=admin_user_token, json=different_skill)
     response_json = response.json()
 
     assert response.status_code == 200
@@ -220,17 +190,16 @@ async def test_put_skill_should_return_200_OK_PUT(session, client, factory_skill
 
 
 @pytest.mark.anyio
-async def test_put_other_id_skill_should_return_404_NOT_FOUND_PUT(session, client, factory_skill):
-    token_header = await get_admin_token_header(client, session)
-    await setup_skill_data(session)
+async def test_put_other_id_skill_should_return_404_NOT_FOUND_PUT(
+    session, client, factory_skill, skill, admin_user_token
+):
     id = 2
-    skill = await get_skill_by_index(client, index=0)
     different_skill = {
         "skill_name": skill["skill_name"],
         "category": skill["category"],
     }
 
-    response = await client.put(f"{base_url}/{id}", headers=token_header, json=different_skill)
+    response = await client.put(f"{base_url}/{id}", headers=admin_user_token, json=different_skill)
     response_json = response.json()
 
     assert response.status_code == 404
@@ -238,16 +207,13 @@ async def test_put_other_id_skill_should_return_404_NOT_FOUND_PUT(session, clien
 
 
 @pytest.mark.anyio
-async def test_put_same_skill_should_return_400_BAD_REQUEST_PUT(session, client, factory_skill):
-    token_header = await get_admin_token_header(client, session)
-    await setup_skill_data(session)
-    skill = await get_skill_by_index(client, index=0)
+async def test_put_same_skill_should_return_400_BAD_REQUEST_PUT(session, client, skill, admin_user_token):
     different_skill = {
         "skill_name": skill["skill_name"],
         "category": skill["category"],
     }
 
-    response = await client.put(f"{base_url}/{skill['id']}", headers=token_header, json=different_skill)
+    response = await client.put(f"{base_url}/{skill['id']}", headers=admin_user_token, json=different_skill)
     response_json = response.json()
 
     assert response.status_code == 400
@@ -255,31 +221,27 @@ async def test_put_same_skill_should_return_400_BAD_REQUEST_PUT(session, client,
 
 
 @pytest.mark.anyio
-async def test_put_user_should_return_403_FORBIDDEN(session, client, factory_skill):
-    token_header = await get_normal_token_header(client, session)
-    await setup_skill_data(session)
-    skill = await get_skill_by_index(client, index=0)
+async def test_put_skill_should_return_403_FORBIDDEN(session, client, factory_skill, skill, normal_user_token):
     different_skill = {
         "skill_name": factory_skill.skill_name,
         "category": factory_skill.category,
     }
 
-    response = await client.put(f"{base_url}/{skill['id']}", headers=token_header, json=different_skill)
+    response = await client.put(f"{base_url}/{skill['id']}", headers=normal_user_token, json=different_skill)
 
     assert response.json() == {"detail": "Not enough permissions"}
     assert response.status_code == 403
 
 
+#### periodic errors here
 @pytest.mark.anyio
-async def test_patch_skill_category_should_return_200_OK_PUT(session, client, factory_skill):
-    token_header = await get_admin_token_header(client, session)
-    await setup_skill_data(session)
-    skill = await get_skill_by_index(client, index=0)
+async def test_patch_skill_category_should_return_200_OK_PUT(session, client, factory_skill, skill, admin_user_token):
     response = await client.patch(
-        f"{base_url}/{skill['id']}/category/{factory_skill.category.value}", headers=token_header
+        f"{base_url}/{skill['id']}/category/{factory_skill.category.value}", headers=admin_user_token
     )
     response_json = response.json()
 
+    ic(response_json)
     assert response.status_code == 200
     assert validate_datetime(response_json["created_at"])
     assert validate_datetime(response_json["updated_at"])
@@ -287,23 +249,21 @@ async def test_patch_skill_category_should_return_200_OK_PUT(session, client, fa
 
 
 @pytest.mark.anyio
-async def test_patch_same_skill_category_should_return_400_BAD_REQUEST_PATCH(session, client, factory_skill):
-    token_header = await get_admin_token_header(client, session)
-    await setup_skill_data(session)
-    skill = await get_skill_by_index(client, index=0)
-    response = await client.patch(f"{base_url}/{skill['id']}/category/{skill['category']}", headers=token_header)
+async def test_patch_same_skill_category_should_return_400_BAD_REQUEST_PATCH(session, client, skill, admin_user_token):
+    response = await client.patch(f"{base_url}/{skill['id']}/category/{skill['category']}", headers=admin_user_token)
     response_json = response.json()
 
     assert response.status_code == 400
     assert response_json == {"detail": "No changes detected"}
 
 
+# ERROR BROKEN TEST, PERIODIC
 @pytest.mark.anyio
-async def test_patch_skill_category_should_return_404_NOT_FOUND_PATCH(session, client, factory_skill):
-    token_header = await get_admin_token_header(client, session)
-    await setup_skill_data(session)
+async def test_patch_skill_category_should_return_404_NOT_FOUND_PATCH(
+    session, client, factory_skill, skill, admin_user_token
+):
     id = 33
-    response = await client.patch(f"{base_url}/{id}/category/{factory_skill.category.value}", headers=token_header)
+    response = await client.patch(f"{base_url}/{id}/category/{factory_skill.category.value}", headers=admin_user_token)
     response_json = response.json()
 
     assert response.status_code == 404
@@ -311,12 +271,9 @@ async def test_patch_skill_category_should_return_404_NOT_FOUND_PATCH(session, c
 
 
 @pytest.mark.anyio
-async def test_patch_skill_skill_name_should_return_200_OK_PUT(session, client, factory_skill):
-    token_header = await get_admin_token_header(client, session)
-    await setup_skill_data(session)
-    skill = await get_skill_by_index(client, index=0)
+async def test_patch_skill_skill_name_should_return_200_OK_PUT(session, client, factory_skill, skill, admin_user_token):
     response = await client.patch(
-        f"{base_url}/{skill['id']}/skill_name/{factory_skill.skill_name}", headers=token_header
+        f"{base_url}/{skill['id']}/skill_name/{factory_skill.skill_name}", headers=admin_user_token
     )
     response_json = response.json()
 
@@ -327,11 +284,12 @@ async def test_patch_skill_skill_name_should_return_200_OK_PUT(session, client, 
 
 
 @pytest.mark.anyio
-async def test_patch_same_skill_skill_name_should_return_400_BAD_REQUEST_PATCH(session, client, factory_skill):
-    token_header = await get_admin_token_header(client, session)
-    await setup_skill_data(session)
-    skill = await get_skill_by_index(client, index=0)
-    response = await client.patch(f"{base_url}/{skill['id']}/skill_name/{skill['skill_name']}", headers=token_header)
+async def test_patch_same_skill_skill_name_should_return_400_BAD_REQUEST_PATCH(
+    session, client, factory_skill, skill, admin_user_token
+):
+    response = await client.patch(
+        f"{base_url}/{skill['id']}/skill_name/{skill['skill_name']}", headers=admin_user_token
+    )
     response_json = response.json()
 
     assert response.status_code == 400
@@ -339,11 +297,11 @@ async def test_patch_same_skill_skill_name_should_return_400_BAD_REQUEST_PATCH(s
 
 
 @pytest.mark.anyio
-async def test_patch_skill_skill_name_should_return_404_NOT_FOUND_PATCH(session, client, factory_skill):
-    token_header = await get_admin_token_header(client, session)
-    await setup_skill_data(session)
+async def test_patch_skill_skill_name_should_return_404_NOT_FOUND_PATCH(
+    session, client, factory_skill, skill, admin_user_token
+):
     id = 33
-    response = await client.patch(f"{base_url}/{id}/skill_name/{factory_skill.skill_name}", headers=token_header)
+    response = await client.patch(f"{base_url}/{id}/skill_name/{factory_skill.skill_name}", headers=admin_user_token)
     response_json = response.json()
 
     assert response.status_code == 404

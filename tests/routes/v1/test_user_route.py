@@ -5,17 +5,13 @@ from uuid import uuid4
 import pytest
 from icecream import ic
 
-from tests.conftest import get_admin_token_header
+from tests.conftest import base_users_url
+from tests.conftest import get_user_by_index
 from tests.conftest import setup_users_data
 from tests.conftest import token
 from tests.conftest import validate_datetime
 
-base_url = "/v1/user"
-
-
-async def get_user_by_index(client, index: int = 0):
-    response = await client.get(f"{base_url}/?ordering=username")
-    return response.json()["founds"][index]
+base_url = base_users_url
 
 
 @pytest.mark.anyio
@@ -41,6 +37,7 @@ async def test_get_all_users_should_return_200_OK_GET(session, client, default_u
     assert all([validate_datetime(user["updated_at"]) for user in users_json])
 
 
+# hard test
 @pytest.mark.anyio
 async def test_get_all_users_with_page_size_should_return_200_OK_GET(session, client):
     query_find_parameters = {"ordering": "username", "page": 1, "page_size": 5}
@@ -50,7 +47,6 @@ async def test_get_all_users_with_page_size_should_return_200_OK_GET(session, cl
     response = await client.get(f"{base_url}/?{urlencode(query_find_parameters)}")
     response_json = response.json()
 
-    print("\n")
     assert response.status_code == 200
     assert all(
         [
@@ -65,6 +61,7 @@ async def test_get_all_users_with_page_size_should_return_200_OK_GET(session, cl
     assert all([validate_datetime(user["updated_at"]) for user in response_json["founds"]])
 
 
+# hard test
 @pytest.mark.anyio
 async def test_get_all_users_with_pagination_should_return_200_OK_GET(session, client):
     query_find_parameters = {"ordering": "username", "page": 2, "page_size": 4}
@@ -90,6 +87,7 @@ async def test_get_all_users_with_pagination_should_return_200_OK_GET(session, c
     assert all([validate_datetime(user["updated_at"]) for user in response_json["founds"]])
 
 
+# hard test
 @pytest.mark.anyio
 async def test_get_user_by_id_should_return_200_OK_GET(session, client):
     user_index = 0
@@ -145,12 +143,10 @@ async def test_create_normal_user_should_return_201_POST(client, session, factor
 
 
 @pytest.mark.anyio
-async def test_create_normal_user_should_return_409_email_already_registered_POST(client, session):
-    clean_users = await setup_users_data(session, 1)
-    clean_user = clean_users[0]
+async def test_create_normal_user_should_return_409_email_already_registered_POST(client, session, normal_user):
     response = await client.post(
         f"{base_url}/",
-        json={"email": clean_user.email, "username": "different_username", "password": clean_user.password},
+        json={"email": normal_user["email"], "username": "different_username", "password": normal_user["password"]},
     )
 
     assert response.status_code == 409
@@ -158,12 +154,10 @@ async def test_create_normal_user_should_return_409_email_already_registered_POS
 
 
 @pytest.mark.anyio
-async def test_create_normal_user_should_return_409_username_already_registered_POST(client, session):
-    clean_users = await setup_users_data(session, 1)
-    clean_user = clean_users[0]
+async def test_create_normal_user_should_return_409_username_already_registered_POST(client, session, normal_user):
     response = await client.post(
         f"{base_url}/",
-        json={"email": "different@email.com", "username": clean_user.username, "password": clean_user.password},
+        json={"email": "different@email.com", "username": normal_user["username"], "password": normal_user["password"]},
     )
 
     assert response.status_code == 409
@@ -171,12 +165,9 @@ async def test_create_normal_user_should_return_409_username_already_registered_
 
 
 @pytest.mark.anyio
-async def test_disable_user_should_return_200_OK_DELETE(session, client):
-    clean_user, auth_token = await token(client, session)
-    token_header = {"Authorization": f"Bearer {auth_token}"}
+async def test_disable_user_should_return_200_OK_DELETE(session, client, normal_user_token):
     user = await get_user_by_index(client, 0)
-
-    response = await client.delete(f"{base_url}/disable/{user['id']}", headers=token_header)
+    response = await client.delete(f"{base_url}/disable/{user['id']}", headers=normal_user_token)
     response_json = response.json()
     modified_user = await get_user_by_index(client, 0)
 
@@ -184,18 +175,16 @@ async def test_disable_user_should_return_200_OK_DELETE(session, client):
     assert response_json == {"detail": "User has been desabled successfully"}
     assert user["is_active"] is True
     assert modified_user["is_active"] is False
-    assert modified_user["email"] == clean_user.email
-    assert modified_user["username"] == clean_user.username
+    assert modified_user["email"] == user["email"]
+    assert modified_user["username"] == user["username"]
     assert modified_user["id"] == user["id"]
 
 
 @pytest.mark.anyio
-async def test_disable_different_user_should_return_403_FORBIDDEN_DELETE(session, client):
-    _, auth_token = await token(client, session, normal_users=2, clean_user_index=0)
-    token_header = {"Authorization": f"Bearer {auth_token}"}
-    other_user = await get_user_by_index(client, 1)
-
-    response = await client.delete(f"{base_url}/disable/{other_user['id']}", headers=token_header)
+async def test_disable_different_user_should_return_403_FORBIDDEN_DELETE(
+    session, client, normal_user, normal_user_token
+):
+    response = await client.delete(f"{base_url}/disable/{normal_user['id']}", headers=normal_user_token)
     response_json = response.json()
 
     assert response.status_code == 403
@@ -203,12 +192,10 @@ async def test_disable_different_user_should_return_403_FORBIDDEN_DELETE(session
 
 
 @pytest.mark.anyio
-async def test_enable_user_user_should_return_200_OK_PATCH(session, client):
-    clean_user, auth_token = await token(client, session, normal_users=0, disable_users=1)
-    token_header = {"Authorization": f"Bearer {auth_token}"}
+async def test_enable_user_user_should_return_200_OK_PATCH(session, client, disable_user_token):
     user = await get_user_by_index(client, 0)
 
-    response = await client.patch(f"{base_url}/enable_user/{user['id']}", headers=token_header)
+    response = await client.patch(f"{base_url}/enable_user/{user['id']}", headers=disable_user_token)
     response_json = response.json()
     modified_user = await get_user_by_index(client, 0)
 
@@ -216,30 +203,25 @@ async def test_enable_user_user_should_return_200_OK_PATCH(session, client):
     assert response_json == {"detail": "User has been enabled successfully"}
     assert user["is_active"] is False
     assert modified_user["is_active"] is True
-    assert modified_user["email"] == clean_user.email
-    assert modified_user["username"] == clean_user.username
+    assert modified_user["email"] == user["email"]
+    assert modified_user["username"] == user["username"]
     assert modified_user["id"] == user["id"]
 
 
 @pytest.mark.anyio
-async def test_enable_user_different_user_should_return_403_FORBIDDEN_PATCH(session, client):
-    _, auth_token = await token(client, session, normal_users=2, clean_user_index=0)
-    token_header = {"Authorization": f"Bearer {auth_token}"}
-    other_user = await get_user_by_index(client, 1)
-
-    response = await client.patch(f"{base_url}/enable_user/{other_user['id']}", headers=token_header)
+async def test_enable_user_different_user_should_return_403_FORBIDDEN_PATCH(
+    session, client, normal_user, normal_user_token
+):
+    response = await client.patch(f"{base_url}/enable_user/{normal_user['id']}", headers=normal_user_token)
     response_json = response.json()
     assert response.status_code == 403
     assert response_json == {"detail": "Not enough permissions"}
 
 
 @pytest.mark.anyio
-async def test_delete_user_should_return_200_OK_DELETE(session, client):
-    clean_user, auth_token = await token(client, session)
-    token_header = {"Authorization": f"Bearer {auth_token}"}
+async def test_delete_user_should_return_200_OK_DELETE(session, client, normal_user_token):
     user = await get_user_by_index(client, 0)
-
-    response = await client.delete(f"{base_url}/{user['id']}", headers=token_header)
+    response = await client.delete(f"{base_url}/{user['id']}", headers=normal_user_token)
     response_json = response.json()
     get_users_response = await client.get(f"{base_url}/?offset=0&limit=100")
 
@@ -249,6 +231,7 @@ async def test_delete_user_should_return_200_OK_DELETE(session, client):
     assert len(get_users_response.json()["founds"]) == 0
 
 
+# refactor later, probabilly a hard test
 @pytest.mark.anyio
 async def test_delete_different_user_should_return_403_FORBIDDEN_DELETE(session, client):
     _, auth_token = await token(client, session, normal_users=2, clean_user_index=0)
@@ -262,9 +245,10 @@ async def test_delete_different_user_should_return_403_FORBIDDEN_DELETE(session,
     assert response_json == {"detail": "Not enough permissions"}
 
 
+# refactor later, strange test, why admin token?
 @pytest.mark.anyio
-async def test_put_user_should_return_200_OK_PUT(session, client, factory_user):
-    token_header = await get_admin_token_header(client, session)
+async def test_put_user_should_return_200_OK_PUT(session, client, factory_user, admin_user_token):
+    # token_header = await get_admin_token_header(client, session)
     user = await get_user_by_index(client, index=0)
     different_user = {
         "email": factory_user.email,
@@ -273,7 +257,7 @@ async def test_put_user_should_return_200_OK_PUT(session, client, factory_user):
         "is_superuser": True,
     }
 
-    response = await client.put(f"{base_url}/{user['id']}", headers=token_header, json=different_user)
+    response = await client.put(f"{base_url}/{user['id']}", headers=admin_user_token, json=different_user)
     response_json = response.json()
 
     assert response.status_code == 200
@@ -282,11 +266,10 @@ async def test_put_user_should_return_200_OK_PUT(session, client, factory_user):
     assert all([response_json[key] == value for key, value in different_user.items()])
 
 
+# in this thes, the order of token and user fixtures are crucial, we need need to input the user that we want the token first
 @pytest.mark.anyio
-async def test_put_user_should_return_403_FORBIDDEN_PUT(session, client, factory_user):
-    _, auth_token = await token(client, session, normal_users=2)
+async def test_put_user_should_return_403_FORBIDDEN_PUT(session, client, factory_user, normal_user_token, normal_user):
     user = await get_user_by_index(client, index=1)
-    token_header = {"Authorization": f"Bearer {auth_token}"}
 
     different_user = {
         "email": factory_user.email,
@@ -295,7 +278,7 @@ async def test_put_user_should_return_403_FORBIDDEN_PUT(session, client, factory
         "is_superuser": True,
     }
 
-    response = await client.put(f"{base_url}/{user['id']}", headers=token_header, json=different_user)
+    response = await client.put(f"{base_url}/{user['id']}", headers=normal_user_token, json=different_user)
 
     assert response.json() == {"detail": "Not enough permissions"}
     assert response.status_code == 403
