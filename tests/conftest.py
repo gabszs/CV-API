@@ -207,3 +207,65 @@ async def get_admin_token_header(client, session) -> str:
 async def get_normal_token_header(client, session) -> str:
     _, auth_token = await token(client, session, normal_users=1)
     return {"Authorization": f"Bearer {auth_token}"}
+
+
+async def get_disable_token_header(client, session) -> str:
+    _, auth_token = await token(client, session, normal_users=0, disable_users=1)
+    return {"Authorization": f"Bearer {auth_token}"}
+
+
+@pytest.fixture()
+async def disable_user_token(client, session):
+    return await get_disable_token_header(client, session)
+
+
+@pytest.fixture()
+async def normal_user_token(client, session):
+    return await get_normal_token_header(client, session)
+
+
+@pytest.fixture()
+async def admin_user_token(client, session):
+    return await get_admin_token_header(client, session)
+
+
+base_skill_url = "/v1/skill"
+
+
+async def get_skill_by_index(client, index: int = 0):
+    response = await client.get(f"{base_skill_url}/?ordering=id")
+    return response.json()["founds"][index]
+
+
+@pytest.fixture()
+async def skill(client, session):
+    await setup_skill_data(session, 1)
+    return await get_skill_by_index(client)
+
+
+base_users_url = "/v1/user"
+
+
+async def get_user_by_index(client, index: int = 0):
+    response = await client.get(f"{base_users_url}/?ordering=username")
+    return response.json()["founds"][index]
+
+
+@pytest.fixture()
+async def normal_user(client, session):
+    users = await setup_users_data(session, normal_users=1)
+    user = users[0]
+
+    user_with_id = await get_user_by_index(client)
+    user_with_id["password"] = user.clean_password
+    return user_with_id
+
+
+@pytest.fixture()
+async def disable_user(client, session):
+    users = await setup_users_data(session, disable_users=1)
+    user = users[0]
+
+    user_with_id = await get_user_by_index(client)
+    user_with_id["password"] = user.clean_password
+    return user_with_id
