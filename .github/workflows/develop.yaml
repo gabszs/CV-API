@@ -37,15 +37,8 @@ jobs:
         with:
           python-version: "3.11.1"
 
-      - name: ensurepath pipx
-        run: pipx ensurepath
-
       - name: Install Poetry
         run: pipx install poetry
-
-      - name: Enter Poetry Virtual Env
-        run: poetry shell
-
 
       - name: Install Dependencies
         run: poetry install
