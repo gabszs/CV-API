@@ -31,6 +31,9 @@ class BaseRepository:
             else getattr(self.model, schema.ordering).asc()
         )
 
+    def get_compiled_stmt(self, stmt: select) -> str:
+        return str(stmt.compile(compile_kwargs={"literal_binds": True}))
+
     async def read_by_options(self, schema: FindBase, eager: bool = False, unique: bool = False):
         async with self.session_factory() as session:
             order_query = await self.get_order_by(schema)
