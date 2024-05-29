@@ -6,9 +6,7 @@ from pydantic import BaseModel
 from pydantic import Field
 
 from app.models.models_enums import SkillLevel
-from app.schemas.base_schema import AttrSearchOptions
 from app.schemas.base_schema import FindModelResult
-from app.schemas.skill_schema import BaseSkillWithId
 
 
 class BaseUserSkillsAssociation(BaseModel):
@@ -32,6 +30,6 @@ class FindUserSkillResults(FindModelResult):
     founds: List[BaseUserSkillsAssociation]
 
 
-class FindSkillsByUser(BaseModel):
-    founds: List[BaseSkillWithId]
-    search_options: AttrSearchOptions
+class FindSkillsByUser(FindModelResult):
+    user_id: UUID
+    founds: List[PublicUserSkillAssociation]

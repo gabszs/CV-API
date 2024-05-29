@@ -1,5 +1,4 @@
 from datetime import datetime
-from enum import Enum
 from typing import Annotated
 from typing import Any
 from typing import List
@@ -8,6 +7,7 @@ from typing import Union
 from uuid import UUID
 
 from pydantic import BaseModel
+from pydantic import ConfigDict
 from pydantic import Field
 from pydantic import field_validator
 from pydantic import ValidationInfo
@@ -15,11 +15,6 @@ from pydantic._internal._model_construction import ModelMetaclass
 
 from app.core.exceptions import ValidationError
 from app.core.settings import settings
-
-
-class AttrOrderingOptions(str, Enum):
-    desc = "desc"
-    _desc = "-desc"
 
 
 class Message(BaseModel):
@@ -67,14 +62,6 @@ class SearchOptions(FindBase):
     total_count: Optional[int]
 
 
-class AttrFindBase(FindBase):
-    ordering: Optional[AttrOrderingOptions]
-
-
-class AttrSearchOptions(AttrFindBase):
-    total_count: Optional[int]
-
-
 class FindResult(BaseModel):
     founds: Optional[List]
     search_options: Optional[SearchOptions]
@@ -88,6 +75,7 @@ class FindDateRange(BaseModel):
 
 
 class FindModelResult(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     founds: List[Any]
     search_options: SearchOptions
 
