@@ -7,7 +7,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = ">=3.11,<=3.13"
-fastapi = {extras = ["all"], version = "^0.110.0"}
+fastapi = {extras = ["all"], version = "^0.110.3"}
 pydantic-settings = "^2.2.1"
 redis = "^5.0.3"
 python-jose = "^3.3.0"
