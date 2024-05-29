@@ -128,16 +128,16 @@ async def test_get_all_skills_with_pagination_should_return_200_OK_GET(session, 
     assert all([validate_datetime(skill["updated_at"]) for skill in response_founds])
 
 
-# @pytest.mark.anyio
-# async def test_delete_skill_should_return_200_OK_DELETE(session, client, admin_user_token, skill):
-#     response = await client.delete(f"{base_url}/{skill['id']}", headers=admin_user_token)
-#     response_json = response.json()
-#     get_skills_response = await client.get(f"{base_url}/")
+@pytest.mark.anyio
+async def test_delete_skill_should_return_200_OK_DELETE(session, client, admin_user_token, skill):
+    response = await client.delete(f"{base_url}/{skill['id']}", headers=admin_user_token)
+    response_json = response.json()
+    get_skills_response = await client.get(f"{base_url}/")
 
-#     assert response.status_code == 200
-#     assert response_json == {"detail": "Skill has been deleted successfully"}
-#     assert get_skills_response.status_code == 200
-#     assert len(get_skills_response.json()["founds"]) == 0
+    assert response.status_code == 200
+    assert response_json == {"detail": "Skill has been deleted successfully"}
+    assert get_skills_response.status_code == 200
+    assert len(get_skills_response.json()["founds"]) == 0
 
 
 @pytest.mark.anyio
