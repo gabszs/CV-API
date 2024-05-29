@@ -2,7 +2,9 @@ from contextlib import AbstractContextManager
 from typing import Callable
 from uuid import UUID
 
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import selectinload
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import DuplicatedError
@@ -11,6 +13,8 @@ from app.models import Skill
 from app.models import User
 from app.models import UserSkillsAssociation
 from app.repository.base_repository import BaseRepository
+from app.schemas.base_schema import FindBase
+from app.schemas.user_skills_schema import FindSkillsByUser
 
 
 class UserSkillRepository(BaseRepository):
@@ -42,42 +46,19 @@ class UserSkillRepository(BaseRepository):
             except IntegrityError as _:
                 raise DuplicatedError(detail="Association already created")
 
-    from app.schemas.base_schema import AttrSearchOptions
-
-    async def read_skills_by_user_id(self, user_id: UUID, find_query: AttrSearchOptions):
-        from sqlalchemy.orm import load_only
-        from sqlalchemy import select
-        from app.models import UserSkillsAssociation
-
+    async def read_skills_by_user_id(self, user_id: UUID, find_query: FindBase) -> FindSkillsByUser:
         async with self.session_factory() as session:
-            options = [load_only(Skill.id, Skill.skill_name, Skill.category)]
+            stmt = select(User).where(User.id == user_id).options(selectinload(User.skills))
+            result = await session.execute(stmt)
+            user = result.scalar_one()
 
-            order_query = await self.get_order_by(find_query)
-
-            stmt = (
-                select(self.model)
-                .where(User.id == user_id)
-                .join_from(self.model, UserSkillsAssociation)
-                .join_from(UserSkillsAssociation, User)
-                .options(*options)
-                .order_by(order_query)
-            )
-
-            if find_query.page_size != "all":
-                stmt = stmt.offset((find_query.page - 1) * (find_query.page_size)).limit(int(find_query.page_size))
-
-            result = await session.scalars(stmt)
-            # return result.unique().all()
-            return result
-
-            # order_query = (
-            #     getattr(self.model, schema.ordering[1:]).desc()
-            #     if schema.ordering.startswith("-")
-            #     else getattr(self.model, schema.ordering).asc()
-            # )
-            # stmt = select(self.model).order_by(order_query)
-            # if eager:
-            #     for eager_relation in getattr(self.model, "eagers", []):
-            #         stmt = stmt.options(joinedload(getattr(self.model, eager_relation)))
-            # if schema.page_size != "all":
-            #     stmt = stmt.offset((schema.page - 1) * (schema.page_size)).limit(int(schema.page_size))
+            return {
+                "user_id": user_id,
+                "founds": user.skills,
+                "search_options": {
+                    "page": find_query.page,
+                    "page_size": find_query.page_size,
+                    "ordering": find_query.ordering,
+                    "total_count": len(user.skills),
+                },
+            }
