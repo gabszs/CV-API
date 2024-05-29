@@ -4,7 +4,7 @@ from fastapi import APIRouter
 from fastapi import Depends
 
 from app.core.dependencies import UserSkillServiceDependency
-from app.schemas.base_schema import AttrFindBase
+from app.schemas.base_schema import FindBase
 from app.schemas.user_skills_schema import FindSkillsByUser
 from app.schemas.user_skills_schema import InsertUserSkillAssociation
 from app.schemas.user_skills_schema import PublicUserSkillAssociation
@@ -22,7 +22,7 @@ async def get_user_skill(user_id: UUID, skill_id: int, service: UserSkillService
     pass
 
 
-@router.post("/", response_model=PublicUserSkillAssociation)
+@router.post("/", status_code=201, response_model=PublicUserSkillAssociation)
 async def create_user_skills(
     user_skill_association: InsertUserSkillAssociation,
     service: UserSkillServiceDependency,
@@ -35,13 +35,9 @@ async def create_user_skills(
 async def get_skills_by_user(
     user_id: UUID,
     service: UserSkillServiceDependency,
-    find_query: AttrFindBase = Depends(),
+    find_query: FindBase = Depends(),
     # current_user: CurrentActiveUserDependency,
 ):
-    print(find_query)
-    print(find_query.ordering.value)
-    find_query.ordering = find_query.ordering.value
-    print(find_query.ordering)
     return await service.get_skill_by_user(user_id, find_query)
 
 
