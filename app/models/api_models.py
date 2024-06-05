@@ -9,6 +9,7 @@ from sqlalchemy.orm import relationship
 from app.models.base_model import Base
 from app.models.models_enums import CategoryOptions
 from app.models.models_enums import SkillLevel
+from app.models.models_enums import UserRoles
 
 
 class UserSkillsAssociation(Base):
@@ -28,9 +29,11 @@ class User(Base):
     password: Mapped[str]
     email: Mapped[str] = mapped_column(unique=True)
     username: Mapped[str] = mapped_column(unique=True)
-    skills: Mapped[List["UserSkillsAssociation"]] = relationship(back_populates="user", init=False, lazy="joined")
+    role: Mapped[UserRoles] = mapped_column(default=UserRoles.BASE_USER, server_default=UserRoles.BASE_USER)
+    skills: Mapped[List["UserSkillsAssociation"]] = relationship(
+        back_populates="user", init=False, lazy="joined", cascade="all, delete-orphan"
+    )
     is_active: Mapped[bool] = mapped_column(default=True, server_default="True")
-    is_superuser: Mapped[bool] = mapped_column(default=False, server_default="False")
 
 
 class Skill(Base):
@@ -39,4 +42,6 @@ class Skill(Base):
     id: Mapped[int] = mapped_column(primary_key=True, init=False)
     skill_name: Mapped[str] = mapped_column(unique=True)
     category: Mapped[CategoryOptions]
-    users: Mapped[List["UserSkillsAssociation"]] = relationship(back_populates="skill", init=False, lazy="joined")
+    users: Mapped[List["UserSkillsAssociation"]] = relationship(
+        back_populates="skill", init=False, lazy="joined", cascade="all, delete-orphan"
+    )
