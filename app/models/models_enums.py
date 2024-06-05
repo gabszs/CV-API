@@ -51,3 +51,10 @@ class CategoryOptions(str, Enum):
     REAL_ESTATE = "Real Estate"
     ADVERTISING = "Advertising"
     TRAFFIC_MANAGEMENT = "Traffic Management"
+
+
+class UserRoles(str, Enum):
+    ADMIN = "ADMIN"
+    MODERATOR = "MODERATOR"
+    BASE_USER = "BASE_USER"
+    GUEST = "GUEST"
