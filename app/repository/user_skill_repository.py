@@ -28,18 +28,15 @@ class UserSkillRepository(BaseRepository):
     async def create(self, schema):
         async with self.session_factory() as session:
             try:
-                user = await session.get(User, schema.users_id)
+                user = await session.get(User, schema.user_id)
                 skill = await session.get(Skill, schema.skill_id)
 
                 if not user:
                     raise NotFoundError("User not found")
                 if not skill:
                     raise NotFoundError("Skill not found")
-
                 user_skill_association = self.model(user=user, skill=skill, **schema.model_dump())
                 session.add(user_skill_association)
-                user.skills.append(user_skill_association)
-                skill.users.append(user_skill_association)
                 await session.commit()
                 await session.refresh(user_skill_association)
                 return user_skill_association
