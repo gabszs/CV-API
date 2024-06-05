@@ -33,5 +33,9 @@ class Settings(BaseSettings):
     PAGE_SIZE: Optional[int] = 20
     ORDERING: Optional[str] = "-created_at"
 
+    base_skill_url: Optional[str] = "/v1/skill"
+    base_users_url: Optional[str] = "/v1/user"
+    base_auth_route: Optional[str] = "/v1/auth"
+
 
 settings = Settings()
