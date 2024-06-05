@@ -1,6 +1,8 @@
 from datetime import datetime
 from datetime import timedelta
+from functools import wraps
 from typing import Dict
+from typing import List
 from typing import Tuple
 
 import bcrypt
@@ -11,12 +13,32 @@ from jose import jwt
 
 from app.core.exceptions import AuthError
 from app.core.settings import Settings
-
+from app.models.models_enums import UserRoles
 
 settings = Settings()
 
 secret_key = settings.SECRET_KEY
 algorithm = settings.ALGORITHM
+
+
+def authorize(role: List[UserRoles], allow_same_id: bool = False):
+    def decorator(func):
+        @wraps(func)
+        async def wrapper(*args, **kwargs):
+            user_role = kwargs.get("current_user").role
+            have_authorization = user_role in role
+            if allow_same_id:
+                is_same_id = kwargs.get("current_user").id == kwargs.get("user_id")
+                if not is_same_id and not have_authorization:
+                    raise AuthError("Not enough permissions")
+                return await func(*args, **kwargs)
+            if not have_authorization:
+                raise AuthError("Not enough permissions")
+            return await func(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
 
 
 def create_access_token(subject: Dict[str, str], expires_delta: timedelta = timedelta(minutes=30)) -> Tuple[str, str]:
@@ -68,7 +90,7 @@ class JWTBearer(HTTPBearer):
                 raise AuthError(detail="Invalid token or expired token")
             return credentials.credentials
         else:
-            raise AuthError(detail="Invaldid authorization code")
+            raise AuthError(detail="Invalid authorization code")
 
     def verify_jwt(self, jwt_token: str) -> bool:
         is_token_valid: bool = False
