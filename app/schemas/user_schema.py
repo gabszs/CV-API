@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from pydantic import ConfigDict
 from pydantic import EmailStr
 
+from app.models.models_enums import UserRoles
 from app.schemas.base_schema import AllOptional
 from app.schemas.base_schema import FindBase
 from app.schemas.base_schema import FindModelResult
@@ -24,8 +25,7 @@ class User(BaseUser, ModelBaseInfo):
     model_config = ConfigDict(from_attributes=True)
 
     is_active: bool
-    is_superuser: bool
-    ...
+    role: UserRoles
 
 
 class OptionalUser(User, metaclass=AllOptional):
@@ -40,8 +40,6 @@ class UpsertUser(BaseModel):
     email: Optional[EmailStr]
     username: Optional[str]
     is_active: Optional[bool]
-    is_superuser: Optional[bool]
-    ...
 
 
 class FindUserResult(FindModelResult):

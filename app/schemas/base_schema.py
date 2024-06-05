@@ -21,6 +21,10 @@ class Message(BaseModel):
     detail: str
 
 
+class NoContent(BaseModel):
+    pass
+
+
 class AllOptional(ModelMetaclass):
     def __new__(self, name, bases, namespaces, **kwargs):
         annotations = namespaces.get("__annotations__", {})
