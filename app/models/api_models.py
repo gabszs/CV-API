@@ -2,6 +2,7 @@ from typing import List
 from uuid import UUID
 
 from sqlalchemy import ForeignKey
+from sqlalchemy import UniqueConstraint
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
@@ -15,12 +16,14 @@ from app.models.models_enums import UserRoles
 class UserSkillsAssociation(Base):
     __tablename__ = "user_skills_association"
 
-    users_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), primary_key=True)
+    user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), primary_key=True)
     skill_id: Mapped[int] = mapped_column(ForeignKey("skills.id"), primary_key=True)
     skill_level: Mapped[SkillLevel]
     skill_years_experience: Mapped[int]
     skill: Mapped["Skill"] = relationship(back_populates="users", lazy="joined")
     user: Mapped["User"] = relationship(back_populates="skills", lazy="joined")
+
+    __table_args__ = (UniqueConstraint("user_id", "skill_id"),)
 
 
 class User(Base):
@@ -31,7 +34,7 @@ class User(Base):
     username: Mapped[str] = mapped_column(unique=True)
     role: Mapped[UserRoles] = mapped_column(default=UserRoles.BASE_USER, server_default=UserRoles.BASE_USER)
     skills: Mapped[List["UserSkillsAssociation"]] = relationship(
-        back_populates="user", init=False, lazy="joined", cascade="all, delete-orphan"
+        back_populates="user", init=False, lazy="joined", cascade="all,delete"
     )
     is_active: Mapped[bool] = mapped_column(default=True, server_default="True")
 
@@ -43,5 +46,5 @@ class Skill(Base):
     skill_name: Mapped[str] = mapped_column(unique=True)
     category: Mapped[CategoryOptions]
     users: Mapped[List["UserSkillsAssociation"]] = relationship(
-        back_populates="skill", init=False, lazy="joined", cascade="all, delete-orphan"
+        back_populates="skill", init=False, lazy="joined", cascade="all,delete"
     )
