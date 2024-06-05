@@ -10,7 +10,7 @@ from app.schemas.base_schema import FindModelResult
 
 
 class BaseUserSkillsAssociation(BaseModel):
-    users_id: UUID
+    user_id: UUID
     skill_id: int
     skill_level: SkillLevel
     skill_years_experience: int = Field(ge=-1, le=70)

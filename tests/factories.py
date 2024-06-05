@@ -50,7 +50,7 @@ class UserSkillFactory(factory.Factory):
     class Meta:
         model = UserSkillsAssociation
 
-    users_id = None
+    user_id = None
     skill_id = None
     skill_level = fuzzy.FuzzyChoice(SkillLevel)
     skill_years_experience = factory.Faker("pyint", min_value=0, max_value=70)

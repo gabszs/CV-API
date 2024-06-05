@@ -116,3 +116,11 @@ async def setup_skill_data(session, skills_qty: int = 1, index: Optional[int] = 
     if index is not None:
         return return_list[index]
     return return_list
+
+
+# async def get_search_normal_user_skill_data(client, session, normal_users: int = 1, skills_qty: int = 1, **kwargs):
+#     await setup_users_data(session, normal_users=normal_users, **kwargs)
+#     await setup_skill_data(session, skills_qty)
+#     user_search = await get_user_by_index(client)
+#     skill_search = await get_skill_by_index(client)
+#     return user_search, skill_search
