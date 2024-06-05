@@ -36,6 +36,7 @@ class Settings(BaseSettings):
     base_skill_url: Optional[str] = "/v1/skill"
     base_users_url: Optional[str] = "/v1/user"
     base_auth_route: Optional[str] = "/v1/auth"
+    base_user_skills_route: Optional[str] = "/v1/user-skill"
 
 
 settings = Settings()
