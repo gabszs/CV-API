@@ -49,6 +49,9 @@ class UserSkillRepository(BaseRepository):
     async def read_skills_by_user_id(self, user_id: UUID, find_query: FindBase) -> FindSkillsByUser:
         async with self.session_factory() as session:
             stmt = select(User).where(User.id == user_id).options(selectinload(User.skills))
+            if find_query.page_size != "all":
+                stmt = stmt.offset((find_query.page - 1) * (find_query.page_size)).limit(int(find_query.page_size))
+
             result = await session.execute(stmt)
             user = result.scalar_one()
 
