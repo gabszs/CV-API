@@ -118,12 +118,10 @@ async def test_get_all_skills_with_pagination_should_return_200_OK_GET(session, 
 
 
 @pytest.mark.anyio
-async def test_delete_skill_should_return_200_OK_DELETE(session, client, admin_user_token, skill):
+async def test_delete_skill_should_return_204_OK_DELETE(session, client, admin_user_token, skill):
     response = await client.delete(f"{settings.base_skill_url}/{skill.id}", headers=admin_user_token)
-    response_json = response.json()
     get_skills_response = await client.get(f"{settings.base_skill_url}/")
-    assert response.status_code == 200
-    assert response_json == {"detail": "Skill has been deleted successfully"}
+    assert response.status_code == 204
     assert get_skills_response.status_code == 200
     assert len(get_skills_response.json()["founds"]) == 0
 
@@ -218,7 +216,7 @@ async def test_patch_skill_category_should_return_200_OK_PUT(session, client, fa
         f"{settings.base_skill_url}/{skill.id}/category/{factory_skill.category.value}", headers=admin_user_token
     )
     response_json = response.json()
-    ic(response_json)
+
     assert response.status_code == 200
     assert validate_datetime(response_json["created_at"])
     assert validate_datetime(response_json["updated_at"])
@@ -227,7 +225,6 @@ async def test_patch_skill_category_should_return_200_OK_PUT(session, client, fa
 
 @pytest.mark.anyio
 async def test_patch_same_skill_category_should_return_400_BAD_REQUEST_PATCH(session, client, skill, admin_user_token):
-    ic(skill)
     response = await client.patch(
         f"{settings.base_skill_url}/{skill.id}/category/{skill.category.value}", headers=admin_user_token
     )

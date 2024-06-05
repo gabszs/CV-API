@@ -6,7 +6,6 @@ from app.core.dependencies import SkillServiceDependency
 from app.core.security import authorize
 from app.models.models_enums import CategoryOptions
 from app.models.models_enums import UserRoles
-from app.schemas.base_schema import Message
 from app.schemas.skill_schema import BaseSkill
 from app.schemas.skill_schema import FindSkillResult
 from app.schemas.skill_schema import PublicSkill
@@ -55,8 +54,7 @@ async def change_skill_skill_name(
     return await service.patch_attr(id=skill_id, attr="skill_name", value=skill_name)
 
 
-@router.delete("/{skill_id}", response_model=Message)
+@router.delete("/{skill_id}", status_code=204)
 @authorize(role=[UserRoles.ADMIN, UserRoles.MODERATOR])
 async def delete_skill(skill_id: int, service: SkillServiceDependency, current_user: CurrentUserDependency):
-    await service.remove_by_id(id=skill_id)
-    return Message(detail="Skill has been deleted successfully")
+    return await service.remove_by_id(id=skill_id)
