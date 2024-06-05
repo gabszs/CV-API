@@ -1,14 +1,57 @@
+from unittest.mock import AsyncMock
+
 import pytest
 
-from tests.conftest import token
-from tests.routes.v1.test_auth_route import base_auth_route
+from app.core.exceptions import AuthError
+from app.core.security import authorize
+from app.models.models_enums import UserRoles
 
 
-@pytest.mark.anyio
-async def test_security_wrong_bearer_credential_403_FORBIDDEN(client, session):
-    _, auth_token = await token(client, session)
-    wrong_token_header = {"Authorization": f"Bear {auth_token}"}
-    response = await client.get(f"{base_auth_route}/me", headers=wrong_token_header)
+@pytest.fixture
+def mock_function():
+    return AsyncMock()
 
-    assert response.status_code == 403
-    assert response.json() == {"detail": "Invalid authentication credentials"}
+
+@pytest.mark.asyncio
+async def test_authorize_with_valid_with_same_id_equals_true(mock_function):
+    user = AsyncMock(role=UserRoles.BASE_USER, id=123)
+    kwargs = {"current_user": user, "user_id": 123}
+    decorated_func = authorize(role=[UserRoles.MODERATOR], allow_same_id=True)(mock_function)
+    result = await decorated_func(**kwargs)
+    assert result == mock_function.return_value
+
+
+@pytest.mark.asyncio
+async def test_authorize_with_admin(mock_function):
+    user = AsyncMock(role=UserRoles.ADMIN, id=123)
+    kwargs = {"current_user": user, "user_id": 123}
+    decorated_func = authorize(role=[UserRoles.ADMIN])(mock_function)
+    result = await decorated_func(**kwargs)
+    assert result == mock_function.return_value
+
+
+@pytest.mark.asyncio
+async def test_authorize_with_invalid_role(mock_function):
+    user = AsyncMock(role=UserRoles.BASE_USER, id=123)
+    kwargs = {"current_user": user, "user_id": 123}
+    decorated_func = authorize(role=[UserRoles.MODERATOR])(mock_function)
+    with pytest.raises(AuthError):
+        await decorated_func(**kwargs)
+
+
+@pytest.mark.asyncio
+async def test_authorize_with_invalid_id(mock_function):
+    user = AsyncMock(role=UserRoles.BASE_USER, id=123)
+    kwargs = {"current_user": user, "user_id": 456}
+    decorated_func = authorize(role=[UserRoles.MODERATOR], allow_same_id=True)(mock_function)
+    with pytest.raises(AuthError):
+        await decorated_func(**kwargs)
+
+
+@pytest.mark.asyncio
+async def test_authorize_without_same_id(mock_function):
+    user = AsyncMock(role=UserRoles.BASE_USER, id=123)
+    kwargs = {"current_user": user, "user_id": 124}
+    decorated_func = authorize(role=[UserRoles.MODERATOR], allow_same_id=False)(mock_function)
+    with pytest.raises(AuthError):
+        await decorated_func(**kwargs)
