@@ -4,7 +4,6 @@ import pytest
 from icecream import ic
 
 from app.core.settings import settings
-from app.models import Skill
 from tests.helpers import setup_skill_data
 from tests.helpers import validate_datetime
 
@@ -121,9 +120,11 @@ async def test_get_all_skills_with_pagination_should_return_200_OK_GET(session, 
 @pytest.mark.anyio
 async def test_delete_skill_should_return_204_OK_DELETE(session, client, admin_user_token, skill):
     response = await client.delete(f"{settings.base_skill_url}/{skill.id}", headers=admin_user_token)
-
+    get_skills_response = await client.get(f"{settings.base_skill_url}/")
     assert response.status_code == 204
-    assert (await session.get(Skill, skill.id)) is None
+    ic(get_skills_response.json(), get_skills_response)
+    assert get_skills_response.status_code == 200
+    assert len(get_skills_response.json()["founds"]) == 0
 
 
 @pytest.mark.anyio
@@ -133,6 +134,7 @@ async def test_delete_skill_should_return_403_FORBIDDEN_DELETE(session, client, 
     get_skills_response = await client.get(f"{settings.base_skill_url}/")
     assert response.status_code == 403
     assert response_json == {"detail": "Not enough permissions"}
+    ic(get_skills_response.json(), get_skills_response)
     assert get_skills_response.status_code == 200
     assert len(get_skills_response.json()["founds"]) == 1
 
