@@ -16,6 +16,11 @@ class BaseUserSkillsAssociation(BaseModel):
     skill_years_experience: int = Field(ge=-1, le=70)
 
 
+class UpdateUserSkillAssociation(BaseModel):
+    skill_level: SkillLevel
+    skill_years_experience: int = Field(ge=-1, le=70)
+
+
 class InsertUserSkillAssociation(BaseUserSkillsAssociation):
     ...
 
@@ -27,7 +32,7 @@ class PublicUserSkillAssociation(BaseUserSkillsAssociation):
 
 
 class FindUserSkillResults(FindModelResult):
-    founds: List[BaseUserSkillsAssociation]
+    founds: List[PublicUserSkillAssociation]
 
 
 class FindSkillsByUser(FindModelResult):
