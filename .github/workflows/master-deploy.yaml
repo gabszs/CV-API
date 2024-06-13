@@ -27,7 +27,7 @@ env:
   POSTGRES_DB: ${{secrets.POSTGRES_DB}}
   PAGE: ${{vars.PAGE}}
   PAGE_SIZE: ${{vars.PAGE_SIZE}}
-  ORDERING: ${{vars.PAGE_SIZE}}
+  ORDERING: ${{vars.ORDERING}}
 
 jobs:
   build:
