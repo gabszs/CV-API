@@ -15,6 +15,7 @@ from app.models import UserSkillsAssociation
 from app.repository.base_repository import BaseRepository
 from app.schemas.base_schema import FindBase
 from app.schemas.user_skills_schema import FindSkillsByUser
+from app.schemas.user_skills_schema import InsertUserSkillAssociation
 
 
 class UserSkillRepository(BaseRepository):
@@ -22,10 +23,7 @@ class UserSkillRepository(BaseRepository):
         self.session_factory = session_factory
         super().__init__(session_factory, UserSkillsAssociation)
 
-    async def read_by_id(user_id: UUID, skill_id: int):
-        pass
-
-    async def create(self, schema):
+    async def create(self, schema: InsertUserSkillAssociation):
         async with self.session_factory() as session:
             try:
                 user = await session.get(User, schema.user_id)

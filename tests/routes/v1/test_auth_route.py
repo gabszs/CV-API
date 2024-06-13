@@ -84,6 +84,7 @@ async def test_auth_get_me_should_return_200_OK_GET(client, session, normal_user
     user = await get_user_by_index(client, 0, token_header=moderator_user_token)
     response = await client.get(f"{settings.base_auth_route}/me", headers=normal_user_token)
     response_json = response.json()
+
     assert response.status_code == 200
     assert UUID(response_json["id"])
     assert response_json["email"] == user["email"]
