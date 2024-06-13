@@ -1,6 +1,8 @@
 from datetime import datetime
 from typing import List
 from typing import Optional
+from typing import Union
+from uuid import UUID
 
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,12 +15,10 @@ from app.models import UserSkillsAssociation
 from app.models.models_enums import UserRoles
 from tests.factories import create_factory_users
 from tests.factories import SkillFactory
-from tests.factories import UserFactory
 from tests.factories import UserSkillFactory
 from tests.schemas import TestSkillSchema
 from tests.schemas import UserModelSetup
 from tests.schemas import UserSchemaWithHashedPassword
-from tests.schemas import UserSkillId
 from tests.schemas import UserSkillTest
 
 
@@ -51,8 +51,8 @@ async def add_users_models(
     is_active=True,
     index: Optional[int] = None,
     get_model: bool = False,
-) -> List[UserFactory]:
-    return_users: List[UserFactory, User] = []
+) -> List[Union[UserSchemaWithHashedPassword, User]]:
+    return_users: List[Union[UserSchemaWithHashedPassword, User]] = []
     users = create_factory_users(users_qty=users_qty, user_role=user_role, is_active=is_active)
     password_list = [factory_model.password for factory_model in users]
     for user in users:
@@ -77,12 +77,15 @@ async def add_users_models(
                 hashed_password=user.password,
             )
         )
+
     if index is not None:
         return return_users[index]
     return return_users
 
 
-async def setup_users_data(session, model_args: List[UserModelSetup], **kwargs) -> List[UserSchemaWithHashedPassword]:
+async def setup_users_data(
+    session: AsyncSession, model_args: List[UserModelSetup], **kwargs
+) -> List[UserSchemaWithHashedPassword]:
     return_list: List[UserSchemaWithHashedPassword] = []
     for user_setup in model_args:
         user_list = await add_users_models(
@@ -92,7 +95,7 @@ async def setup_users_data(session, model_args: List[UserModelSetup], **kwargs) 
     return return_list
 
 
-async def token(client, session, base_auth_route: str = "/v1/auth", **kwargs):
+async def token(client, session: AsyncSession, base_auth_route: str = "/v1/auth", **kwargs):
     user = await add_users_models(session=session, index=0, **kwargs)
     response = await client.post(
         f"{base_auth_route}/sign-in", json={"email__eq": user.email, "password": user.password}
@@ -109,8 +112,8 @@ async def get_user_token(client: AsyncClient, user: UserSchemaWithHashedPassword
 
 async def setup_skill_data(
     session, skills_qty: int = 1, index: Optional[int] = None, get_model: bool = False
-) -> List[TestSkillSchema]:
-    return_list: List[TestSkillSchema, Skill] = []
+) -> List[Union[TestSkillSchema, Skill]]:
+    return_list: List[Union[TestSkillSchema, Skill]] = []
     skills = SkillFactory.create_batch(skills_qty)
     session.add_all(skills)
     await session.commit()
@@ -134,15 +137,13 @@ async def setup_skill_data(
 
 
 async def setup_user_skill_data(
-    session,
+    session: AsyncSession,
     model_args: List[UserModelSetup],
     skills_qty: int = 1,
     index: Optional[int] = None,
     get_model: bool = False,
     **kwargs,
 ):
-    from icecream import ic
-
     global initial
     initial = -1
 
@@ -154,21 +155,19 @@ async def setup_user_skill_data(
         initial += 1
         return initial
 
-    association_list: List[UserSkillsAssociation, UserSkillTest] = []
-    users = await setup_users_data(session, model_args=model_args, get_model=True, **kwargs)
-    skills = await setup_skill_data(session, skills_qty=skills_qty, get_model=True)
+    association_list: List[Union[UserSkillsAssociation, UserSkillTest]] = []
+    users = await setup_users_data(session, model_args=model_args, **kwargs)
+    skills = await setup_skill_data(session, skills_qty=len(model_args))
 
-    for user in users:
+    for count, user_scheme in enumerate(users):
         schema = UserSkillFactory()
-        skill_index = get_by_order(skills_qty)
-        skill = skills[skill_index]
-        ic(skill_index == 0, skills_qty, skills, skills[0], user.id, skill.id)
-        user_skill_id = UserSkillId(user_id=user.id, skill_id=skill.id)
+        skill = await session.get(Skill, skills[count].id)
+        user = await session.get(User, user_scheme.id)
         user_skill = UserSkillsAssociation(
             user=user,
             skill=skill,
-            user_id=user_skill_id.user_id,
-            skill_id=user_skill_id.skill_id,
+            user_id=user.id,
+            skill_id=skill.id,
             skill_level=schema.skill_level,
             skill_years_experience=schema.skill_years_experience,
         )
@@ -193,3 +192,36 @@ async def setup_user_skill_data(
     if index is not None:
         return association_list[index]
     return association_list
+
+
+async def add_skill_to_user(
+    session: AsyncSession, user_id: UUID, skill_id: Optional[int] = None, get_model: bool = False
+):
+    if skill_id is None:
+        skill_id = (await setup_skill_data(session, index=0)).id
+    skill = await session.get(Skill, skill_id)
+    user = await session.get(User, user_id)
+    schema = UserSkillFactory()
+    user_skill = UserSkillsAssociation(
+        user=user,
+        skill=skill,
+        user_id=user.id,
+        skill_id=skill.id,
+        skill_level=schema.skill_level,
+        skill_years_experience=schema.skill_years_experience,
+    )
+    session.add(user_skill)
+    await session.commit()
+    await session.refresh(user_skill)
+
+    if get_model:
+        return user_skill
+    return UserSkillTest(
+        user_id=user_skill.user_id,
+        skill_id=user_skill.skill_id,
+        skill_level=user_skill.skill_level,
+        skill_years_experience=user_skill.skill_years_experience,
+        id=user_skill.id,
+        created_at=user_skill.created_at,
+        updated_at=user_skill.updated_at,
+    )

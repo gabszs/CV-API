@@ -1,6 +1,9 @@
 from typing import AsyncGenerator
+from typing import Dict
 from typing import Generator
 from typing import List
+from uuid import UUID
+from uuid import uuid4
 
 import pytest
 from httpx import ASGITransport
@@ -10,6 +13,7 @@ from sqlalchemy import event
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.orm import Session
 from sqlalchemy.orm import SessionTransaction
@@ -24,10 +28,19 @@ from tests.factories import UserFactory
 from tests.factories import UserSkillFactory
 from tests.helpers import add_users_models
 from tests.helpers import setup_skill_data
+from tests.helpers import setup_user_skill_data
 from tests.helpers import token
+from tests.schemas import TestSkillSchema
 from tests.schemas import UserModelSetup
+from tests.schemas import UserSchemaWithHashedPassword
+from tests.schemas import UserSkillTest
 
 sync_db_url = settings.TEST_DATABASE_URL.replace("+asyncpg", "")
+
+
+@pytest.fixture
+def random_uuid() -> UUID:
+    return uuid4()
 
 
 @pytest.fixture
@@ -45,7 +58,12 @@ def default_search_options() -> str:
 
 
 @pytest.fixture
-def default_uuid_search_options() -> str:
+def default_created_search_options() -> str:
+    return {"ordering": "created_at", "page": 1, "page_size": "all"}
+
+
+@pytest.fixture
+def default_username_search_options() -> str:
     return {"ordering": "username", "page": 1, "page_size": "all"}
 
 
@@ -157,130 +175,61 @@ async def session() -> AsyncGenerator:
     await async_engine.dispose()
 
 
-# async def setup_users_data(
-#     session: AsyncSession, normal_users: int = 0, admin_users: int = 0, disable_users: int = 0, disable_admins: int = 0
-# ) -> List[UserWithCleanPassword]:
-#     users, clean_users = batch_users_by_options(
-#         normal_users=normal_users, admin_users=admin_users, disable_users=disable_users, disable_admins=disable_admins
-#     )
-#     session.add_all(users)
-#     await session.flush()
-#     await session.commit()
-#     for user in users:
-#         await session.refresh(user)
-#     return clean_users
-
-
-# async def setup_skill_data(session: AsyncSession, qty_size: int = 1) -> List[BaseSkill]:
-#     skills: List[Skill] = SkillFactory.create_batch(qty_size)
-#     clean_skills: List[BaseSkill] = [
-#         BaseSkill(skill_name=skill.skill_name, category=skill.category.value) for skill in skills
-#     ]
-#     session.add_all(skills)
-#     await session.flush()
-#     await session.commit()
-#     for skill in skills:
-#         await session.refresh(skill)
-#     return clean_skills
-
-
-#     if clean_user_index > normal_users or clean_user_index < 0:
-#         raise ValueError("The index needs to be lower than normal_users_qty or greater than 0")
-
-#     clean_users = await setup_users_data(session, normal_users=normal_users, **kwargs)
-#     clean_user = clean_users[clean_user_index]
-#     response = await client.post(
-#         f"{base_auth_route}/sign-in", json={"email__eq": clean_user.email, "password": clean_user.clean_password}
-#     )
-#     return clean_user, response.json()["access_token"]
-
-
-# async def get_admin_token_header(client, session) -> str:
-#     _, auth_token = await token(client, session, normal_users=0, admin_users=1)
-#     return {"Authorization": f"Bearer {auth_token}"}
-
-
-# async def get_normal_token_header(client, session) -> str:
-#     _, auth_token = await token(client, session, normal_users=1)
-#     return {"Authorization": f"Bearer {auth_token}"}
-
-
-# async def get_disable_token_header(client, session) -> str:
-#     _, auth_token = await token(client, session, normal_users=0, disable_users=1)
-#     return {"Authorization": f"Bearer {auth_token}"}
-
-
-# @pytest.fixture()
-# async def disable_user_token(client, session):
-#     return await get_disable_token_header(client, session)
-
-
 @pytest.fixture()
-async def normal_user_token(client, session):
+async def normal_user_token(client: AsyncClient, session: AsyncSession) -> Dict[str, str]:
     return await token(client, session)
 
 
 @pytest.fixture()
-async def moderator_user_token(client, session):
+async def moderator_user_token(client: AsyncClient, session: AsyncSession) -> Dict[str, str]:
     return await token(client, session, user_role=UserRoles.MODERATOR)
 
 
 @pytest.fixture()
-async def admin_user_token(client, session):
+async def admin_user_token(client: AsyncClient, session: AsyncSession) -> Dict[str, str]:
     return await token(client, session, user_role=UserRoles.ADMIN)
 
 
 @pytest.fixture()
-async def disable_normal_user_token(client, session):
+async def disable_normal_user_token(client: AsyncClient, session: AsyncSession) -> Dict[str, str]:
     return await token(client, session, user_role=UserRoles.MODERATOR, is_active=False)
 
 
-# @pytest.fixture()
-# async def admin_user_token(client, session):
-#     return await get_admin_token_header(client, session)
-
-
-# @pytest.fixture()
-# async def skill(client, session):
-#     await setup_skill_data(session, 1)
-#     return await get_skill_by_index(client)
-
-
 @pytest.fixture()
-async def normal_user(session):
+async def normal_user(session: AsyncSession) -> UserSchemaWithHashedPassword:
     return await add_users_models(session, index=0)
 
 
 @pytest.fixture()
-async def moderator_user(session):
+async def moderator_user(session: AsyncSession) -> UserSchemaWithHashedPassword:
     return await add_users_models(session, index=0, user_role=UserRoles.MODERATOR)
 
 
 @pytest.fixture()
-async def admin_user(session):
+async def admin_user(session: AsyncSession) -> UserSchemaWithHashedPassword:
     return await add_users_models(session, index=0, user_role=UserRoles.ADMIN)
 
 
 @pytest.fixture()
-async def disable_normal_user(session):
+async def disable_normal_user(session: AsyncSession) -> UserSchemaWithHashedPassword:
     return await add_users_models(session, index=0, user_role=UserRoles.BASE_USER, is_active=False)
 
 
 @pytest.fixture()
-async def skill(session):
+async def skill(session: AsyncSession) -> TestSkillSchema:
     return await setup_skill_data(session, index=0)
 
 
 @pytest.fixture()
-async def another_skill(session):
+async def another_skill(session: AsyncSession) -> TestSkillSchema:
     return await setup_skill_data(session, index=0)
 
 
-# @pytest.fixture()
-# async def disable_user(client, session):
-#     users = await setup_users_data(session, disable_users=1)
-#     user = users[0]
+@pytest.fixture()
+async def user_skill_assoc(session: AsyncSession) -> UserSkillTest:
+    return await setup_user_skill_data(session, model_args=[UserModelSetup()], index=0)
 
-#     user_with_id = await get_user_by_index(client)
-#     user_with_id["password"] = user.clean_password
-#     return user_with_id
+
+@pytest.fixture()
+async def batch_user_skill_assoc(session: AsyncSession, batch_setup_users) -> UserSkillTest:
+    return await setup_user_skill_data(session, model_args=batch_setup_users)
