@@ -17,7 +17,9 @@ router = APIRouter(prefix="/skill", tags=["skills"])
 @router.get("/", response_model=FindSkillResult)
 async def get_all_skills(find_query: FindQueryParameters, service: SkillServiceDependency):
     from icecream import ic
+    from app.core.settings import settings
     ic(find_query)
+    ic(settings.ORDERING, settings.PAGE, settings.PAGE_SIZE)
     return await service.get_list(find_query)
 
 
