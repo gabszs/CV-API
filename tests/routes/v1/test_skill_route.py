@@ -121,8 +121,8 @@ async def test_get_all_skills_with_pagination_should_return_200_OK_GET(session, 
 async def test_delete_skill_should_return_204_OK_DELETE(session, client, admin_user_token, skill):
     response = await client.delete(f"{settings.base_skill_url}/{skill.id}", headers=admin_user_token)
     get_skills_response = await client.get(f"{settings.base_skill_url}/")
+
     assert response.status_code == 204
-    ic(get_skills_response.json(), get_skills_response)
     assert get_skills_response.status_code == 200
     assert len(get_skills_response.json()["founds"]) == 0
 
@@ -132,9 +132,9 @@ async def test_delete_skill_should_return_403_FORBIDDEN_DELETE(session, client, 
     response = await client.delete(f"{settings.base_skill_url}/{skill.id}", headers=normal_user_token)
     response_json = response.json()
     get_skills_response = await client.get(f"{settings.base_skill_url}/")
+
     assert response.status_code == 403
     assert response_json == {"detail": "Not enough permissions"}
-    ic(get_skills_response.json(), get_skills_response)
     assert get_skills_response.status_code == 200
     assert len(get_skills_response.json()["founds"]) == 1
 
@@ -218,7 +218,7 @@ async def test_patch_skill_category_should_return_200_OK_PUT(session, client, fa
     enpoint = f"{settings.base_skill_url}/{skill.id}/category/{factory_skill.category.value}"
     response = await client.patch(enpoint, headers=admin_user_token)
     response_json = response.json()
-    ic(response_json, enpoint)
+
     assert response.status_code == 200
     assert validate_datetime(response_json["created_at"])
     assert validate_datetime(response_json["updated_at"])
