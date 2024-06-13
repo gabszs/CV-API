@@ -1,18 +1,21 @@
 from contextlib import AbstractContextManager
 from typing import Any
 from typing import Callable
+from typing import Union
 from uuid import UUID
 
 from pydantic import EmailStr
 from sqlalchemy import select
 from sqlalchemy import update
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import BadRequestError
 from app.core.exceptions import DuplicatedError
 from app.core.exceptions import NotFoundError
+from app.core.exceptions import ValidationError
 from app.core.settings import Settings
 from app.schemas.base_schema import FindBase
 
@@ -25,11 +28,19 @@ class BaseRepository:
         self.model = model
 
     async def get_order_by(self, schema):
-        return (
-            getattr(self.model, schema.ordering[1:]).desc()
-            if schema.ordering.startswith("-")
-            else getattr(self.model, schema.ordering).asc()
-        )
+        try:
+            return (
+                getattr(self.model, schema.ordering[1:]).desc()
+                if schema.ordering.startswith("-")
+                else getattr(self.model, schema.ordering).asc()
+            )
+        except AttributeError:
+            raise ValidationError(f"Unprocessable Entity, attribute '{schema.ordering}' does not exist")
+
+    async def get_model_by_id(self, session: AsyncSession, id: Union[UUID, int], not_unique_pk: bool = False):
+        if not_unique_pk:
+            return await session.scalar(select(self.model).where(self.model.id == id))
+        return await session.get(self.model, id)
 
     def get_compiled_stmt(self, stmt: select) -> str:
         return str(stmt.compile(compile_kwargs={"literal_binds": True}))
@@ -60,10 +71,9 @@ class BaseRepository:
                 },
             }
 
-    async def read_by_id(self, id: UUID):
+    async def read_by_id(self, id: UUID, not_unique_pk: bool = False):
         async with self.session_factory() as session:
-            result = await session.get(self.model, id)
-
+            result = await self.get_model_by_id(session, id, not_unique_pk)
             if not result:
                 raise NotFoundError(detail=f"id not found: {id}")
             return result
@@ -92,10 +102,10 @@ class BaseRepository:
                 raise BadRequestError(str(error))
             return model
 
-    async def update(self, id: UUID, schema):
+    async def update(self, id: UUID, schema, not_unique_pk: bool = True):
         async with self.session_factory() as session:
             schema = schema.model_dump()
-            result = await session.get(self.model, id)
+            result = await self.get_model_by_id(session, id, not_unique_pk)
 
             if not result:
                 raise NotFoundError(detail=f"id not found: {id}")
@@ -113,9 +123,9 @@ class BaseRepository:
                 error_message = ":".join(str(e.orig).replace("\n", " ").split(":")[1:])
                 raise DuplicatedError(detail=error_message)
 
-    async def update_attr(self, id: UUID, column: str, value: Any):
+    async def update_attr(self, id: UUID, column: str, value: Any, not_unique_pk: bool = False):
         async with self.session_factory() as session:
-            result = await session.get(self.model, id)
+            result = await self.get_model_by_id(session, id, not_unique_pk)
             if not result:
                 raise NotFoundError(detail=f"id not found: {id}")
             if value == getattr(result, column):
@@ -131,16 +141,17 @@ class BaseRepository:
                 error_message = ":".join(str(e.orig).replace("\n", " ").split(":")[1:])
                 raise DuplicatedError(detail=error_message)
 
+    # BROKEN
     async def whole_update(self, id: UUID, schema):
         async with self.session_factory() as session:
             await session.query(self.model).filter(self.model.id == id).update(schema.model_dump())
             await session.commit()
             return self.read_by_id(id)
 
-    async def delete_by_id(self, id: UUID):
+    async def delete_by_id(self, id: UUID, not_unique_pk: bool = False):
         async with self.session_factory() as session:
-            user = await session.get(self.model, id)
-            if not user:
+            result = await self.get_model_by_id(session, id, not_unique_pk)
+            if not result:
                 raise NotFoundError(detail=f"not found id: {id}")
-            await session.delete(user)
+            await session.delete(result)
             await session.commit()
