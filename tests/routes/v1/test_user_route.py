@@ -1,7 +1,6 @@
 from typing import List
 from urllib.parse import urlencode
 from uuid import UUID
-from uuid import uuid4
 
 import pytest
 from httpx import AsyncClient
@@ -30,7 +29,7 @@ async def get_input_complete_list(
 
 @pytest.mark.anyio
 async def test_get_all_users_should_return_200_OK_GET(
-    session, client, default_uuid_search_options, batch_setup_users, moderator_user_token
+    session, client, default_username_search_options, batch_setup_users, moderator_user_token
 ):
     expected_lenght = (
         len(batch_setup_users) + 1
@@ -38,14 +37,14 @@ async def test_get_all_users_should_return_200_OK_GET(
     setup_users = await setup_users_data(session=session, model_args=batch_setup_users)
     setup_users = await get_input_complete_list(client, moderator_user_token, setup_users)
     response = await client.get(
-        f"{settings.base_users_url}/?{urlencode(default_uuid_search_options)}", headers=moderator_user_token
+        f"{settings.base_users_url}/?{urlencode(default_username_search_options)}", headers=moderator_user_token
     )
     response_json = response.json()
 
     users_json = response_json["founds"]
     assert response.status_code == 200
     assert len(users_json) == expected_lenght
-    assert response_json["search_options"] == default_uuid_search_options | {"total_count": expected_lenght}
+    assert response_json["search_options"] == default_username_search_options | {"total_count": expected_lenght}
     assert all(
         [
             user.username == users_json[count].get("username") and user.email == users_json[count].get("email")
@@ -136,8 +135,7 @@ async def test_get_user_by_id_should_return_200_OK_GET(session, client, moderato
 
 
 @pytest.mark.anyio
-async def test_get_user_by_id_should_return_404_NOT_FOUND_GET(session, client, moderator_user_token):
-    random_uuid = str(uuid4())
+async def test_get_user_by_id_should_return_404_NOT_FOUND_GET(session, random_uuid, client, moderator_user_token):
     response = await client.get(f"{settings.base_users_url}/{random_uuid}", headers=moderator_user_token)
 
     assert response.status_code == 404

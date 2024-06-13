@@ -210,19 +210,20 @@ async def test_put_skill_should_return_403_FORBIDDEN(session, client, factory_sk
     assert response.status_code == 403
 
 
+# periodic erros here
 @pytest.mark.anyio
 async def test_patch_skill_category_should_return_200_OK_PUT(session, client, factory_skill, skill, admin_user_token):
-    response = await client.patch(
-        f"{settings.base_skill_url}/{skill.id}/category/{factory_skill.category.value}", headers=admin_user_token
-    )
+    enpoint = f"{settings.base_skill_url}/{skill.id}/category/{factory_skill.category.value}"
+    response = await client.patch(enpoint, headers=admin_user_token)
     response_json = response.json()
-
+    ic(response_json, enpoint)
     assert response.status_code == 200
     assert validate_datetime(response_json["created_at"])
     assert validate_datetime(response_json["updated_at"])
     assert response_json["category"] == factory_skill.category
 
 
+# ERROR BROKEN TEST, PERIODIC
 @pytest.mark.anyio
 async def test_patch_same_skill_category_should_return_400_BAD_REQUEST_PATCH(session, client, skill, admin_user_token):
     response = await client.patch(
