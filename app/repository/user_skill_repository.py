@@ -4,7 +4,6 @@ from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import selectinload
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import DuplicatedError
@@ -43,20 +42,28 @@ class UserSkillRepository(BaseRepository):
 
     async def read_skills_by_user_id(self, user_id: UUID, find_query: FindBase) -> FindSkillsByUser:
         async with self.session_factory() as session:
-            stmt = select(User).where(User.id == user_id).options(selectinload(User.skills))
+            order_query = await self.get_order_by(find_query)
+
+            stmt = (
+                select(UserSkillsAssociation)
+                .join(UserSkillsAssociation.user)
+                .where(User.id == user_id)
+                .order_by(order_query)
+            )
+
             if find_query.page_size != "all":
                 stmt = stmt.offset((find_query.page - 1) * (find_query.page_size)).limit(int(find_query.page_size))
 
-            result = await session.execute(stmt)
-            user = result.scalar_one()
+            query = await session.execute(stmt)
+            skills = query.unique().scalars().all()
 
             return {
                 "user_id": user_id,
-                "founds": user.skills,
+                "founds": skills,
                 "search_options": {
                     "page": find_query.page,
                     "page_size": find_query.page_size,
                     "ordering": find_query.ordering,
-                    "total_count": len(user.skills),
+                    "total_count": len(skills),
                 },
             }
