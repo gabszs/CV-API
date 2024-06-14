@@ -5,7 +5,9 @@ from typing import Union
 from uuid import UUID
 
 from httpx import AsyncClient
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.security import get_password_hash
 from app.core.settings import settings
@@ -13,6 +15,9 @@ from app.models import Skill
 from app.models import User
 from app.models import UserSkillsAssociation
 from app.models.models_enums import UserRoles
+from app.schemas.base_schema import SearchOptions
+from app.schemas.user_skills_schema import FindSkillsByUser
+from app.schemas.user_skills_schema import PublicUserSkillAssociation
 from tests.factories import create_factory_users
 from tests.factories import SkillFactory
 from tests.factories import UserSkillFactory
@@ -196,7 +201,7 @@ async def setup_user_skill_data(
 
 async def add_skill_to_user(
     session: AsyncSession, user_id: UUID, skill_id: Optional[int] = None, get_model: bool = False
-):
+) -> Union[UserSkillsAssociation, UserSkillTest]:
     if skill_id is None:
         skill_id = (await setup_skill_data(session, index=0)).id
     skill = await session.get(Skill, skill_id)
@@ -224,4 +229,34 @@ async def add_skill_to_user(
         id=user_skill.id,
         created_at=user_skill.created_at,
         updated_at=user_skill.updated_at,
+    )
+
+
+async def read_skills_by_user_id(session: AsyncSession, user_id: UUID) -> FindSkillsByUser:
+    stmt = select(User).where(User.id == user_id).options(selectinload(User.skills))
+    result = await session.execute(stmt)
+    user = result.scalar_one()
+    skills: List[PublicUserSkillAssociation] = []
+    for skill in user.skills:
+        skills.append(
+            PublicUserSkillAssociation(
+                user_id=user_id,
+                skill_id=skill.skill_id,
+                skill_level=skill.skill_level,
+                skill_years_experience=skill.skill_years_experience,
+                id=skill.id,
+                created_at=skill.created_at,
+                updated_at=skill.updated_at,
+            )
+        )
+
+    return FindSkillsByUser(
+        user_id=user_id,
+        founds=skills,
+        search_options=SearchOptions(
+            page=1,
+            page_size="all",
+            ordering="-id",
+            total_count=len(user.skills),
+        ),
     )
