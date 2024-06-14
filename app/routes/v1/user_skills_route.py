@@ -28,7 +28,9 @@ async def read_all_user_skill_associations(
 
 @router.get("/{user_skill_id}", response_model=PublicUserSkillAssociation)
 @authorize(role=[UserRoles.MODERATOR, UserRoles.ADMIN], allow_same_id=True)
-async def get_user_by_id(user_skill_id: UUID, service: UserSkillServiceDependency, current_user: CurrentUserDependency):
+async def get_user_skill_by_id(
+    user_skill_id: UUID, service: UserSkillServiceDependency, current_user: CurrentUserDependency
+):
     return await service.get_by_id(user_skill_id, not_unique_pk=True)
 
 
@@ -47,9 +49,9 @@ async def create_user_skills(
 
 
 # test
-@router.get("/skills-by-user/{user_id}", response_model=FindSkillsByUser)
+@router.get("/user/{user_id}", response_model=FindSkillsByUser)
 @authorize(role=[UserRoles.ADMIN, UserRoles.MODERATOR], allow_same_id=True)
-async def get_skills_by_user(
+async def get_user_skills_by_id(
     user_id: UUID,
     service: UserSkillServiceDependency,
     current_user: CurrentUserDependency,
