@@ -23,10 +23,13 @@ from app.core.settings import settings
 from app.main import app
 from app.models import Base
 from app.models.models_enums import UserRoles
+from app.schemas.user_skills_schema import FindSkillsByUser
 from tests.factories import SkillFactory
 from tests.factories import UserFactory
 from tests.factories import UserSkillFactory
+from tests.helpers import add_skill_to_user
 from tests.helpers import add_users_models
+from tests.helpers import read_skills_by_user_id
 from tests.helpers import setup_skill_data
 from tests.helpers import setup_user_skill_data
 from tests.helpers import token
@@ -233,3 +236,13 @@ async def user_skill_assoc(session: AsyncSession) -> UserSkillTest:
 @pytest.fixture()
 async def batch_user_skill_assoc(session: AsyncSession, batch_setup_users) -> UserSkillTest:
     return await setup_user_skill_data(session, model_args=batch_setup_users)
+
+
+@pytest.fixture()
+async def user_multiples_skills(session: AsyncSession) -> FindSkillsByUser:
+    user_skill = await setup_user_skill_data(session, model_args=[UserModelSetup()], index=0)
+    skills = await setup_skill_data(session, skills_qty=7)
+    added_skills = []
+    for skill in skills:
+        added_skills.append(await add_skill_to_user(session, user_id=user_skill.user_id, skill_id=skill.id))
+    return await read_skills_by_user_id(session, user_id=user_skill.user_id)
