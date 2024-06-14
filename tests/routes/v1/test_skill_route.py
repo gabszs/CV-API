@@ -212,7 +212,7 @@ async def test_put_skill_should_return_403_FORBIDDEN(session, client, factory_sk
     assert response.status_code == 403
 
 
-# periodic erros here
+# periodic erros here -> probabelliy beacuse the factory returns a equal skill
 @pytest.mark.anyio
 async def test_patch_skill_category_should_return_200_OK_PUT(session, client, factory_skill, skill, admin_user_token):
     enpoint = f"{settings.base_skill_url}/{skill.id}/category/{factory_skill.category.value}"
@@ -225,7 +225,7 @@ async def test_patch_skill_category_should_return_200_OK_PUT(session, client, fa
     assert response_json["category"] == factory_skill.category
 
 
-# ERROR BROKEN TEST, PERIODIC
+# ERROR BROKEN TEST, PERIODIC -> probabelliy beacuse the factory returns a deffirente skill
 @pytest.mark.anyio
 async def test_patch_same_skill_category_should_return_400_BAD_REQUEST_PATCH(session, client, skill, admin_user_token):
     response = await client.patch(
