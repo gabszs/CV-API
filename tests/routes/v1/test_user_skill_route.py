@@ -286,4 +286,84 @@ async def test_put_USER_skill_should_return_403_FORBIDDEN(
     assert response.status_code == 403
 
 
+# GET SKILLS - BY USER ID
+@pytest.mark.anyio
+async def test_get_all_skills_by_USER_id_should_return_200_OK_GET(
+    client, session, user_multiples_skills, default_created_search_options, moderator_user_token
+):
+    response = await client.get(
+        f"{settings.base_user_skills_route}/user/{user_multiples_skills.user_id}?{urlencode(default_created_search_options)}",
+        headers=moderator_user_token,
+    )
+    response_json = response.json()
+    response_founds = response_json["founds"]
+
+    assert response.status_code == 200
+    assert len(response_founds) == 8
+    assert response_json["search_options"] == default_created_search_options | {"total_count": 8}
+    assert all([validate_datetime(user_skill["created_at"]) for user_skill in response_founds])
+    assert all([validate_datetime(user_skill["updated_at"]) for user_skill in response_founds])
+    [
+        compare_factory_and_schema_assoc(skill_fac, response_founds[counter])
+        for counter, skill_fac in enumerate(user_multiples_skills.founds)
+    ]
+    assert response_json["search_options"] == default_created_search_options | {"total_count": 8}
+    assert response_json["user_id"] == str(user_multiples_skills.user_id)
+
+
+@pytest.mark.anyio
+async def test_get_all_skills_by_USER_id_with_page_size_should_return_200_OK_GET(
+    client, session, user_multiples_skills, moderator_user_token
+):
+    query_find_parameters = {"ordering": "created_at", "page": 1, "page_size": 5}
+    response = await client.get(
+        f"{settings.base_user_skills_route}/user/{user_multiples_skills.user_id}?{urlencode(query_find_parameters)}",
+        headers=moderator_user_token,
+    )
+    response_json = response.json()
+    response_founds = response_json["founds"]
+
+    assert response.status_code == 200
+    assert len(response_founds) == 5
+    assert response_json["search_options"] == query_find_parameters | {"total_count": 5}
+    assert all([validate_datetime(user["created_at"]) for user in response_founds])
+    assert all([validate_datetime(user["updated_at"]) for user in response_founds])
+    [
+        compare_factory_and_schema_assoc(skill_fac, response_founds[counter])
+        for counter, skill_fac in enumerate(user_multiples_skills.founds[: query_find_parameters["page_size"]])
+    ]
+    assert response_json["search_options"] == query_find_parameters | {"total_count": 5}
+    assert response_json["user_id"] == str(user_multiples_skills.user_id)
+
+
+@pytest.mark.anyio
+async def test_get_all_skills_by_USER_id_with_pagination_should_return_200_OK_GET(
+    client, session, user_multiples_skills, moderator_user_token
+):
+    page_size = 3
+    page = 2
+    ordering = "created_at"
+    query_find_parameters = {"ordering": ordering, "page": page, "page_size": page_size}
+    response = await client.get(
+        f"{settings.base_user_skills_route}/user/{user_multiples_skills.user_id}?{urlencode(query_find_parameters)}",
+        headers=moderator_user_token,
+    )
+    response_json = response.json()
+    response_founds = response_json["founds"]
+
+    assert response.status_code == 200
+    assert len(response_founds) == query_find_parameters["page_size"]
+    assert response_json["search_options"] == query_find_parameters | {
+        "total_count": query_find_parameters["page_size"]
+    }
+    assert all([validate_datetime(user["created_at"]) for user in response_founds])
+    assert all([validate_datetime(user["updated_at"]) for user in response_founds])
+    assert response_json["search_options"] == query_find_parameters | {"total_count": page_size}
+    assert response_json["user_id"] == str(user_multiples_skills.user_id)
+    [
+        compare_factory_and_schema_assoc(skill_fac, response_founds[counter])
+        for counter, skill_fac in enumerate(user_multiples_skills.founds[page_size : page_size * page])
+    ]
+
+
 ic
