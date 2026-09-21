@@ -66,6 +66,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Huawei Cloud Software Repository for Container (SWR) Login
+        if: github.event_name == 'push'
         uses: huaweicloud/swr-login@v2.1.0
         with:
           access-key-id: ${{ secrets.ACCESS_KEY }}
@@ -73,12 +74,14 @@ jobs:
           region: ${{ env.CLOUD_REGION }}
 
       - name: Build Docker Image
+        if: github.event_name == 'push'
         id: build-image
         env:
           IMAGE_BUILD_NAME: swr.${{env.CLOUD_REGION}}.myhuaweicloud.com/${{env.SWR_ORGANIZATION}}/${{env.IMAGE_NAME}}:${{env.IMAGE_TAG}}
         run: docker build -t ${{env.IMAGE_BUILD_NAME}} .
 
       - name: Push Docker Image
+        if: github.event_name == 'push'
         env:
           IMAGE_BUILD_NAME: swr.${{env.CLOUD_REGION}}.myhuaweicloud.com/${{env.SWR_ORGANIZATION}}/${{env.IMAGE_NAME}}:${{env.IMAGE_TAG}}
         run: |
